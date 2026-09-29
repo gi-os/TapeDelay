@@ -46,6 +46,10 @@ struct GameView: View {
                 }
             }
         }
+        // Live stream updates land in the model; follow them here too.
+        .onChange(of: model.games) { _, list in
+            if let g = list.first(where: { $0.id == game.id }), g != game { withAnimation(.snappy) { game = g } }
+        }
         .task(id: game.id) {
             activityOn = Push.activityRunning(game.id)
             while !Task.isCancelled {

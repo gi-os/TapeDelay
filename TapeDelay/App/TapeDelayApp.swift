@@ -21,6 +21,7 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var tab: TabId = .scores
     @AppStorage("askedPush") private var askedPush = false
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
         TabView(selection: $tab) {
@@ -30,6 +31,11 @@ struct RootView: View {
             Tab("Settings", systemImage: "timer", value: .settings) { SettingsView() }
         }
         .tabBarMinimizeBehavior(.onScrollDown)
+        // The live stream only runs while the app is on screen.
+        .onChange(of: phase) { _, p in
+            if p != .active { LiveStream.shared.watch([]) }
+            else { Task { await model.refresh() } }
+        }
         // Ask for notifications the first time a team is followed, not on a cold first launch.
         .onChange(of: model.follows.count) { _, n in
             guard n > 0, !askedPush else { return }

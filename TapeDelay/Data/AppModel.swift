@@ -107,6 +107,7 @@ final class AppModel {
         }
         games = await hold(all)
         lastRefresh = now
+        LiveStream.shared.watch(Set(games.filter { $0.state == .live || $0.state == .off }.map(\.id)))
         // Logos for the lock screen, which can't download its own.
         let crests = Dictionary(games.flatMap { [($0.home.uid, $0.home.logo), ($0.away.uid, $0.away.logo)] }
             .compactMap { uid, url in url.map { (uid, $0) } }, uniquingKeysWith: { a, _ in a })
@@ -124,7 +125,8 @@ final class AppModel {
     /// from `delay` seconds ago. No copy (relay down, or a game it never saw live) means the
     /// score is masked, if the user asked for that.
     func hold(_ list: [Game]) async -> [Game] {
-        guard delay > 0 else { return list }
+        // Even at "Live", the relay's copy (straight off ESPN's push feed) is fresher than the
+        // scoreboard poll, so live games always come from it; the delay just picks how old.
         // Start times: a game that just ended started hours ago.
         let recent = Date().addingTimeInterval(-8 * 3600)
         let ids = list.filter { $0.state == .live || $0.state == .off || ($0.state == .post && $0.date > recent) }.map(\.id)
@@ -132,12 +134,25 @@ final class AppModel {
         let snaps = (try? await Relay.delayed(ids: ids, delay: delay)) ?? [:]
         return list.map { g in
             guard ids.contains(g.id) else { return g }
-            if let s = snaps[g.id] { return g.holding(s) }
+            if let s = snaps[g.id] {
+                var h = g.holding(s)
+                h.held = delay > 0
+                return h
+            }
+            if delay == 0 { return g }
             // The relay keeps every game it saw live for 12 hours, so a final it has no copy
             // of is one it never saw: show it. A live game with no copy is the risky one.
             if g.state == .post { return g }
             return prefs.maskWhenUnsure ? g.masking() : g
         }
+    }
+
+    /// A snapshot from the live stream, already held by the delay.
+    func apply(_ s: Relay.Snapshot) {
+        guard let id = s.id, let i = games.firstIndex(where: { $0.id == id }) else { return }
+        var g = games[i].holding(s)
+        g.held = delay > 0
+        games[i] = g
     }
 
     /// One game again, for the detail screen's own refresh.
