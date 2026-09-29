@@ -92,6 +92,13 @@ struct GameCard: View {
             }
         }
         .padding(14)
+        // The two teams' colours, away to home, bleeding up through the glass.
+        .background {
+            LinearGradient(colors: [Color.team(game.away.color).opacity(0.55), Color.team(game.home.color).opacity(0.55)],
+                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                .blur(radius: 18)
+                .clipShape(.rect(cornerRadius: 22))
+        }
         .glassEffect(.regular.tint(tint), in: .rect(cornerRadius: 22))
         .contentShape(.rect(cornerRadius: 22))
     }
