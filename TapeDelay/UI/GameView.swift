@@ -132,7 +132,7 @@ struct GameView: View {
                 if game.kind == .baseball {
                     Bases(on: [s.onFirst, s.onSecond, s.onThird], size: 15)
                     VStack(alignment: .leading, spacing: 2) {
-                        if let b = s.balls, let st = s.strikes { Text("\(b)-\(st)").font(.title2.weight(.black).monospacedDigit()) }
+                        Text("\(s.balls ?? 0)-\(s.strikes ?? 0)").font(.title2.weight(.black).monospacedDigit())
                         if let o = s.outs { Text("\(o) out").font(.subheadline).foregroundStyle(.secondary) }
                     }
                 } else if let dd = s.downDistance {

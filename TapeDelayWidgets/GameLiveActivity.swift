@@ -254,9 +254,7 @@ struct BaseballBug: View {
                         }
                         VStack(alignment: .trailing, spacing: 2) {
                             Text(inning).font(.system(size: 15, weight: .heavy)).monospacedDigit()
-                            if let b = s.balls, let st = s.strikes {
-                                Text("\(b)-\(st)").font(.system(size: 16, weight: .heavy)).monospacedDigit()
-                            }
+                            Text("\(s.balls ?? 0)-\(s.strikes ?? 0)").font(.system(size: 16, weight: .heavy)).monospacedDigit()
                         }
                     } else {
                         Text(s.isFinal ? "FINAL" : s.detail.uppercased()).font(.system(size: 14, weight: .heavy))
@@ -520,7 +518,7 @@ private struct IslandBottom: View {
             if a.sport == "baseball", s.isLive {
                 MiniDiamond(bases: s.bases ?? [false, false, false], size: 8)
                 Outs(n: s.outs ?? 0, d: 7)
-                if let b = s.balls, let st = s.strikes { Text("\(b)-\(st)").font(.system(size: 12, weight: .heavy)).monospacedDigit() }
+                Text("\(s.balls ?? 0)-\(s.strikes ?? 0)").font(.system(size: 12, weight: .heavy)).monospacedDigit()
             } else if a.sport == "football", s.isLive, let spot = s.spot {
                 Text("Ball on \(spot)").font(.system(size: 11, weight: .bold))
             }

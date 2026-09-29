@@ -330,7 +330,7 @@ struct HeroCard: View {
         case .football: return s.downDistance ?? game.detail
         case .baseball:
             var t = s.outs.map { "\($0) out" } ?? ""
-            if let b = s.balls, let st = s.strikes { t += " · \(b)-\(st)" }
+            t += " · \(s.balls ?? 0)-\(s.strikes ?? 0)"
             return t.isEmpty ? game.detail : t
         default: return game.detail
         }
@@ -383,8 +383,7 @@ struct SplitCard: View {
     private var showScores: Bool { game.state != .pre && !game.masked }
 
     private func countLine(outs: Int, _ s: Situation) -> String {
-        if let b = s.balls, let st = s.strikes { return "\(outs) out · \(b)-\(st)" }
-        return "\(outs) out"
+        return "\(outs) out · \(s.balls ?? 0)-\(s.strikes ?? 0)"
     }
 
     private func score(_ s: Side, against o: Side) -> some View {
