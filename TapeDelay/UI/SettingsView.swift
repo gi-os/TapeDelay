@@ -27,6 +27,7 @@ struct DelayControls: View {
                 .padding(.vertical, 6)
                 .listRowBackground(Color.clear)
             }
+            StreamSync()
             Section("I'm watching on") {
                 ForEach(DelayPreset.all) { p in
                     Button {
@@ -126,6 +127,70 @@ struct SettingsView: View {
         case .authorized, .provisional, .ephemeral: permission = "Allowed"
         case .denied: permission = "Off in iOS Settings"
         default: permission = "Not asked yet"
+        }
+    }
+}
+
+/// Sync the delay to what's actually on your screen: the relay shows the newest play it has for a
+/// live game, and you tap the moment that play happens on your stream. The gap is your delay,
+/// measured end to end (ESPN, the relay and your stream's own lag all included).
+struct StreamSync: View {
+    @Environment(AppModel.self) private var model
+    @State private var gameId: String?
+    @State private var latest: Relay.Latest?
+    @State private var clockSkew: Double = 0
+    @State private var synced: Int?
+
+    private var live: [Game] { model.games.filter { $0.state == .live } }
+
+    var body: some View {
+        if !live.isEmpty {
+            Section {
+                if live.count > 1 {
+                    Picker("Game", selection: Binding(get: { gameId ?? live[0].id }, set: { gameId = $0 })) {
+                        ForEach(live) { g in Text("\(g.away.abbr) at \(g.home.abbr)").tag(g.id) }
+                    }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Newest play ESPN has sent").font(.caption).foregroundStyle(.secondary)
+                    Text(playText).font(.headline).lineLimit(3).minimumScaleFactor(0.7)
+                        .contentTransition(.opacity)
+                    Button {
+                        guard let ts = latest?.ts else { return }
+                        let now = Date().timeIntervalSince1970 + clockSkew
+                        let d = max(0, min(900, Int((now - ts).rounded())))
+                        withAnimation { model.delay = d; model.presetName = "Synced"; synced = d }
+                    } label: {
+                        Label("I just saw this on my stream", systemImage: "hand.tap.fill").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.glassProminent).tint(Theme.flag).foregroundStyle(.black)
+                    .disabled(latest?.ts == nil)
+                    if let synced { Text("Set to \(AppModel.format(synced)) behind.").font(.footnote).foregroundStyle(.secondary) }
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("Sync with your stream")
+            } footer: {
+                Text("Wait for a new play to appear here, then tap the instant you see it happen on TV. Do it twice to be sure.")
+            }
+            .task(id: gameId ?? live.first?.id) { await poll() }
+        }
+    }
+
+    private var playText: String {
+        guard let s = latest?.snap else { return "Waiting for the relay…" }
+        if let lp = s.sit?.lp, !lp.isEmpty { return lp }
+        return [s.dt, "\(s.away?.sc ?? 0)-\(s.home?.sc ?? 0)"].compactMap { $0 }.joined(separator: " · ")
+    }
+
+    private func poll() async {
+        guard let id = gameId ?? live.first?.id else { return }
+        while !Task.isCancelled {
+            if let l = try? await Relay.latest(id: id) {
+                clockSkew = l.now - Date().timeIntervalSince1970   // relay clock vs phone clock
+                withAnimation { latest = l }
+            }
+            try? await Task.sleep(for: .seconds(1))
         }
     }
 }

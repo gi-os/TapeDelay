@@ -57,6 +57,16 @@ enum Relay {
         let held: Bool?
     }
 
+    /// The newest thing the relay knows about a game, and when it learned it (for stream sync).
+    struct Latest: Decodable { let now: Double; let ts: Double?; let snap: Snapshot? }
+
+    static func latest(id: String) async throws -> Latest {
+        var c = URLComponents(url: base.appending(path: "latest"), resolvingAgainstBaseURL: false)!
+        c.queryItems = [URLQueryItem(name: "id", value: id)]
+        let (data, _) = try await URLSession.shared.data(from: c.url!)
+        return try JSONDecoder().decode(Latest.self, from: data)
+    }
+
     static func delayed(ids: [String], delay: Int) async throws -> [String: Snapshot] {
         guard !ids.isEmpty else { return [:] }
         var c = URLComponents(url: base.appending(path: "delayed"), resolvingAgainstBaseURL: false)!
