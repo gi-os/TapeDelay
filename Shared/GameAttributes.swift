@@ -34,6 +34,8 @@ struct GameAttributes: ActivityAttributes {
         var awayHits: Int?
         var homeErrors: Int?
         var awayErrors: Int?
+        /// Past start time with nothing under way (a hold, a rain delay before first pitch).
+        var late: Bool?
 
         var isFinal: Bool { state == "post" }
         var isLive: Bool { state == "in" }
@@ -51,6 +53,24 @@ struct GameAttributes: ActivityAttributes {
     var awayUid: String?
     var homeRecord: String?
     var awayRecord: String?
+    // Starting-soon card. All optional.
+    var startTime: Double?
+    var venue: String?
+    var watch: String?
+    var homeProbable: String?
+    var awayProbable: String?
+    var homeProbableLine: String?
+    var awayProbableLine: String?
+    var homeForm: String?
+    var awayForm: String?
+    /// This device's delay when the card was started, so it can say when the start reaches the stream.
+    var delay: Int?
+
+    /// When the start reaches your stream.
+    var streamStart: Date? {
+        guard let t = startTime, t > 0 else { return nil }
+        return Date(timeIntervalSince1970: t + Double(delay ?? 0))
+    }
 }
 
 extension Color {

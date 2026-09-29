@@ -84,6 +84,9 @@ struct Side: Hashable {
     var record: String?
     var winner: Bool
     var lines: [String]
+    var probable: String? = nil       // MLB starting pitcher / NHL goalie
+    var probableLine: String? = nil   // "14-7 · 3.12"
+    var form: String? = nil           // soccer: last five, "WDWWL"
 }
 
 struct Game: Identifiable, Hashable {
@@ -97,6 +100,8 @@ struct Game: Identifiable, Hashable {
     var away: Side
     var venue: String?
     var tv: String?
+    /// Every channel and stream carrying it, national first.
+    var watch: [String] = []
     var note: String?
     var situation: Situation?
     /// True when the score shown is the relay's held copy, behind the live one.

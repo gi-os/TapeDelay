@@ -213,7 +213,7 @@ struct HeroCard: View {
             HStack {
                 statusPill
                 Spacer()
-                if let tv = game.tv { Pill(text: tv) }
+                if !game.watch.isEmpty { Pill(text: game.watch.prefix(2).joined(separator: " · ")) }
             }
             .padding([.horizontal, .top], 16)
 
@@ -362,8 +362,9 @@ struct SplitCard: View {
                     if let o = s.outs { Text(countLine(outs: o, s)).font(.caption2).monospacedDigit().opacity(0.8) }
                 } else if game.state == .live, let dd = game.situation?.downDistance {
                     Text(dd).font(.caption2.weight(.semibold)).opacity(0.8).lineLimit(1).minimumScaleFactor(0.6)
-                } else if game.state == .pre, let tv = game.tv {
-                    Text(tv).font(.caption2).opacity(0.75)
+                } else if game.state == .pre, !game.watch.isEmpty {
+                    Text(game.watch.prefix(2).joined(separator: " · ")).font(.caption2).opacity(0.75)
+                        .lineLimit(1).minimumScaleFactor(0.6)
                 }
             }
             .frame(maxWidth: .infinity)

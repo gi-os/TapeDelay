@@ -16,6 +16,8 @@ struct GameView: View {
                     VStack(spacing: 12) {
                         if game.state == .live, let s = game.situation { situation(s) }
                         if !game.home.lines.isEmpty && !game.masked { linescore }
+                        probables
+                        watchPanel
                         info
                     }
                 }
@@ -150,11 +152,44 @@ struct GameView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 26))
     }
 
+    /// Where to watch: every channel and stream ESPN lists, national first.
+    @ViewBuilder private var watchPanel: some View {
+        if !game.watch.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Where to watch", systemImage: "tv").font(.headline)
+                FlowChips(items: game.watch)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        }
+    }
+
+    /// Starting pitchers or goalies, before the game.
+    @ViewBuilder private var probables: some View {
+        if game.state == .pre, game.home.probable != nil || game.away.probable != nil {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(game.kind == .baseball ? "Probable pitchers" : "Probable goalies").font(.headline)
+                ForEach([game.away, game.home], id: \.uid) { s in
+                    HStack {
+                        Text(s.abbr).fontWeight(.heavy).frame(width: 48, alignment: .leading)
+                        Text(s.probable ?? "TBD").lineLimit(1).minimumScaleFactor(0.6)
+                        Spacer()
+                        if let l = s.probableLine { Text(l).monospacedDigit().foregroundStyle(.secondary) }
+                    }
+                    .font(.callout)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(16)
+            .glassEffect(.regular, in: .rect(cornerRadius: 26))
+        }
+    }
+
     private var info: some View {
         VStack(alignment: .leading, spacing: 10) {
             if let note = game.note { Label(note, systemImage: "trophy.fill") }
             if let v = game.venue { Label(v, systemImage: "mappin.and.ellipse") }
-            if let tv = game.tv { Label(tv, systemImage: "tv") }
             Label(game.date.formatted(date: .complete, time: .shortened), systemImage: "calendar")
         }
         .font(.callout)
@@ -192,6 +227,46 @@ struct GameView: View {
                     .font(.caption).foregroundStyle(.tertiary)
             }
             .padding(.top, 4)
+        }
+    }
+}
+
+/// Channel names as wrapping glass chips.
+struct FlowChips: View {
+    let items: [String]
+    var body: some View {
+        FlowLayout(spacing: 8) {
+            ForEach(items, id: \.self) { n in
+                Text(n).font(.subheadline.weight(.semibold))
+                    .padding(.horizontal, 12).padding(.vertical, 7)
+                    .glassEffect(.regular, in: .capsule)
+            }
+        }
+    }
+}
+
+/// Left-to-right, wrapping to a new line when a row is full.
+struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let w = proposal.width ?? .infinity
+        var x: CGFloat = 0, y: CGFloat = 0, row: CGFloat = 0, widest: CGFloat = 0
+        for v in subviews {
+            let s = v.sizeThatFits(.unspecified)
+            if x > 0 && x + s.width > w { x = 0; y += row + spacing; row = 0 }
+            x += s.width + spacing; row = max(row, s.height); widest = max(widest, x - spacing)
+        }
+        return CGSize(width: min(widest, w), height: y + row)
+    }
+
+    func placeSubviews(in b: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var x = b.minX, y = b.minY, row: CGFloat = 0
+        for v in subviews {
+            let s = v.sizeThatFits(.unspecified)
+            if x > b.minX && x + s.width > b.maxX { x = b.minX; y += row + spacing; row = 0 }
+            v.place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(s))
+            x += s.width + spacing; row = max(row, s.height)
         }
     }
 }

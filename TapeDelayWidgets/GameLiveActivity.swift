@@ -24,7 +24,12 @@ struct GameLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.center) { IslandCenter(a: a, s: s) }
                 DynamicIslandExpandedRegion(.bottom) { IslandBottom(a: a, s: s) }
             } compactLeading: {
-                if a.sport == "baseball" {
+                if s.state == "pre" {
+                    HStack(spacing: -4) {
+                        LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18, on: "000000")
+                        LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18, on: "000000")
+                    }
+                } else if a.sport == "baseball" {
                     MiniDiamond(bases: s.bases ?? [false, false, false], size: 5)
                 } else {
                     HStack(spacing: 4) {
@@ -33,7 +38,9 @@ struct GameLiveActivity: Widget {
                     }
                 }
             } compactTrailing: {
-                if a.sport == "baseball" {
+                if s.state == "pre" {
+                    Countdown(a: a, s: s, size: 13).frame(maxWidth: 52)
+                } else if a.sport == "baseball" {
                     Text("\(s.away)-\(s.home)").font(.system(size: 13, weight: .heavy)).monospacedDigit()
                 } else {
                     HStack(spacing: 4) {
@@ -42,8 +49,12 @@ struct GameLiveActivity: Widget {
                     }
                 }
             } minimal: {
+                if s.state == "pre" {
+                    Image(systemName: "flag.fill").font(.system(size: 11)).foregroundStyle(flagYellow)
+                } else {
                 Text("\(s.away)-\(s.home)").font(.system(size: 10, weight: .heavy)).monospacedDigit()
                     .minimumScaleFactor(0.6)
+                }
             }
             .keylineTint(Color(hex: a.homeColor))
         }
@@ -131,6 +142,14 @@ struct Scorebug: View {
     let s: GameAttributes.ContentState
 
     var body: some View {
+        if s.state == "pre" {
+            PreBug(a: a, s: s)
+        } else {
+            live
+        }
+    }
+
+    @ViewBuilder private var live: some View {
         switch a.sport {
         case "football": FootballBug(a: a, s: s)
         case "baseball": BaseballBug(a: a, s: s)
@@ -431,6 +450,19 @@ private struct IslandSide: View {
     let a: GameAttributes, s: GameAttributes.ContentState
     let home: Bool
     var body: some View {
+        if s.state == "pre" {
+            VStack(spacing: 2) {
+                LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: 32, on: "000000")
+                Text((home ? a.homeRecord : a.awayRecord) ?? "").font(.system(size: 10, weight: .bold)).opacity(0.75)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            }
+            .padding(.horizontal, 4)
+        } else {
+            liveSide
+        }
+    }
+
+    private var liveSide: some View {
         HStack(spacing: 6) {
             if home { Text("\(s.home)").font(.system(size: 28, weight: .black)).monospacedDigit() }
             LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: 30, on: "000000")
@@ -444,6 +476,17 @@ private struct IslandSide: View {
 private struct IslandCenter: View {
     let a: GameAttributes, s: GameAttributes.ContentState
     var body: some View {
+        if s.state == "pre" {
+            VStack(spacing: 1) {
+                Countdown(a: a, s: s, size: 22)
+                Text(PreBug.label(a: a, s: s)).font(.system(size: 9, weight: .heavy)).opacity(0.75).lineLimit(1).minimumScaleFactor(0.6)
+            }
+        } else {
+            liveCenter
+        }
+    }
+
+    private var liveCenter: some View {
         VStack(spacing: 2) {
             Text(s.isFinal ? "FINAL" : s.detail).font(.system(size: 12, weight: .heavy)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.55)
             if a.sport == "football", s.isLive, let d = s.down {
@@ -456,6 +499,23 @@ private struct IslandCenter: View {
 private struct IslandBottom: View {
     let a: GameAttributes, s: GameAttributes.ContentState
     var body: some View {
+        if s.state == "pre" {
+            HStack(spacing: 8) {
+                if let ap = a.awayProbable, let hp = a.homeProbable, !ap.isEmpty || !hp.isEmpty {
+                    Text("\(ap.isEmpty ? "TBD" : ap) vs \(hp.isEmpty ? "TBD" : hp)").font(.system(size: 11, weight: .semibold))
+                        .lineLimit(1).minimumScaleFactor(0.6)
+                }
+                Spacer(minLength: 0)
+                if let w = a.watch, !w.isEmpty {
+                    Text(w).font(.system(size: 11, weight: .semibold)).opacity(0.8).lineLimit(1).minimumScaleFactor(0.6)
+                }
+            }
+        } else {
+            liveBottom
+        }
+    }
+
+    private var liveBottom: some View {
         HStack(spacing: 10) {
             if a.sport == "baseball", s.isLive {
                 MiniDiamond(bases: s.bases ?? [false, false, false], size: 8)
@@ -470,5 +530,250 @@ private struct IslandBottom: View {
             Spacer(minLength: 0)
             HeldTag()
         }
+    }
+}
+
+
+// MARK: - starting soon
+
+/// Counts down to the start reaching your stream, then keeps counting up past it (a system timer,
+/// so it ticks on the lock screen without a single push).
+struct Countdown: View {
+    let a: GameAttributes, s: GameAttributes.ContentState
+    var size: CGFloat = 26
+
+    var body: some View {
+        Group {
+            if let t = a.streamStart {
+                Text(t, style: .timer)
+            } else {
+                Text(s.detail)
+            }
+        }
+        .font(.system(size: size, weight: .bold, design: .monospaced))
+        .monospacedDigit()
+        .foregroundStyle(s.late == true ? Color(red: 1, green: 0.42, blue: 0.37) : flagYellow)
+        .multilineTextAlignment(.center)
+        .lineLimit(1).minimumScaleFactor(0.5)
+    }
+}
+
+/// The pre-game version of each sport's scorebug, so it turns into the live bug in place.
+struct PreBug: View {
+    let a: GameAttributes, s: GameAttributes.ContentState
+
+    static func label(a: GameAttributes, s: GameAttributes.ContentState) -> String {
+        let d = s.detail.uppercased()
+        if s.late == true {
+            if d.contains("DELAY") || d.contains("POSTPON") { return d }
+            return "PAST " + startWord(a.sport)
+        }
+        return "TO " + startWord(a.sport)
+    }
+
+    static func startWord(_ sport: String) -> String {
+        switch sport {
+        case "baseball": "FIRST PITCH"
+        case "basketball": "TIP-OFF"
+        case "hockey": "PUCK DROP"
+        default: "KICKOFF"
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            switch a.sport {
+            case "football": football
+            case "baseball": baseball
+            case "basketball": basketball
+            case "hockey": hockey
+            default: soccer
+            }
+            info
+        }
+        .foregroundStyle(.white)
+    }
+
+    private var timer: some View {
+        VStack(spacing: 1) {
+            Countdown(a: a, s: s, size: 24)
+            Text(Self.label(a: a, s: s)).font(.system(size: 9, weight: .heavy)).tracking(0.8).opacity(0.75)
+                .lineLimit(1).minimumScaleFactor(0.6)
+        }
+    }
+
+    private var info: some View {
+        HStack(spacing: 8) {
+            if let w = a.watch, !w.isEmpty {
+                Label(w, systemImage: "tv").lineLimit(1).minimumScaleFactor(0.6)
+            }
+            Spacer(minLength: 4)
+            if let v = a.venue, !v.isEmpty {
+                Label(v, systemImage: "mappin").lineLimit(1).minimumScaleFactor(0.6)
+            }
+        }
+        .font(.system(size: 11, weight: .semibold))
+        .labelStyle(.titleAndIcon)
+        .padding(.horizontal, 12).padding(.vertical, 7)
+        .background(Color.white.opacity(0.06))
+    }
+
+    // Football: the two colour halves, countdown where the score goes.
+    private var football: some View {
+        ZStack {
+            HStack(spacing: 0) {
+                half(a.awayUid, a.awayAbbr, a.awayColor, a.awayRecord, home: false)
+                half(a.homeUid, a.homeAbbr, a.homeColor, a.homeRecord, home: true)
+            }
+            timer.padding(.horizontal, 12).padding(.vertical, 6)
+                .background(.black.opacity(0.55), in: .rect(cornerRadius: 12))
+        }
+        .frame(height: 80)
+    }
+
+    private func half(_ uid: String?, _ abbr: String, _ color: String, _ rec: String?, home: Bool) -> some View {
+        ZStack(alignment: home ? .trailing : .leading) {
+            teamGradient(color, reversed: home)
+            LogoMark(uid: uid, abbr: abbr, size: 60, on: color).offset(x: home ? 8 : -8).opacity(0.9)
+            VStack(alignment: home ? .trailing : .leading, spacing: 0) {
+                Spacer()
+                Text(abbr).font(.system(size: 14, weight: .black))
+                if let rec, !rec.isEmpty { Text(rec).font(.system(size: 10, weight: .bold)).opacity(0.85) }
+            }
+            .padding(.horizontal, 10).padding(.vertical, 6)
+            .frame(maxWidth: .infinity, alignment: home ? .trailing : .leading)
+        }
+        .clipped()
+    }
+
+    // Baseball: the box, records where the scores go, pitchers beside the countdown.
+    private var baseball: some View {
+        let navy = Color(red: 0.106, green: 0.184, blue: 0.369)
+        let rule = Color(red: 0.79, green: 0.82, blue: 0.87)
+        return HStack(spacing: 0) {
+            VStack(spacing: 2) {
+                boxRow(a.awayUid, a.awayAbbr, a.awayColor, a.awayRecord, navy)
+                boxRow(a.homeUid, a.homeAbbr, a.homeColor, a.homeRecord, navy)
+            }
+            .background(rule)
+            Rectangle().fill(rule).frame(width: 2)
+            HStack(spacing: 10) {
+                timer
+                VStack(alignment: .leading, spacing: 3) {
+                    pitcher(a.awayProbable, a.awayProbableLine)
+                    pitcher(a.homeProbable, a.homeProbableLine)
+                }
+            }
+            .padding(.horizontal, 10)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(navy)
+        }
+        .frame(height: 66)
+    }
+
+    private func boxRow(_ uid: String?, _ abbr: String, _ color: String, _ rec: String?, _ navy: Color) -> some View {
+        HStack(spacing: 2) {
+            LogoMark(uid: uid, abbr: abbr, size: 24, on: color).frame(width: 44, height: 32).background(Color(hex: color))
+            Text(rec ?? "").font(.system(size: 11, weight: .heavy)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
+                .frame(width: 44, height: 32).background(navy)
+        }
+    }
+
+    private func pitcher(_ name: String?, _ line: String?) -> some View {
+        HStack(spacing: 5) {
+            Text("P").opacity(0.6)
+            Text((name?.isEmpty == false ? name! : "TBD").uppercased()).lineLimit(1).minimumScaleFactor(0.6)
+            Spacer(minLength: 0)
+            if let line, !line.isEmpty { Text(line).opacity(0.8).lineLimit(1).minimumScaleFactor(0.6) }
+        }
+        .font(.system(size: 10.5, weight: .heavy))
+    }
+
+    // Basketball: the bar with logos and records, countdown where the clock goes.
+    private var basketball: some View {
+        HStack(spacing: 0) {
+            barHalf(a.awayUid, a.awayAbbr, a.awayColor, a.awayRecord, home: false)
+            timer.frame(width: 96).frame(maxHeight: .infinity).background(Color(white: 0.06))
+            barHalf(a.homeUid, a.homeAbbr, a.homeColor, a.homeRecord, home: true)
+        }
+        .frame(height: 62)
+    }
+
+    private func barHalf(_ uid: String?, _ abbr: String, _ color: String, _ rec: String?, home: Bool) -> some View {
+        HStack(spacing: 7) {
+            LogoMark(uid: uid, abbr: abbr, size: 30, on: color)
+            VStack(alignment: home ? .trailing : .leading, spacing: 1) {
+                Text(abbr).font(.system(size: 14, weight: .black))
+                Text(rec ?? "").font(.system(size: 10, weight: .bold)).opacity(0.8).lineLimit(1).minimumScaleFactor(0.6)
+            }
+            Spacer(minLength: 0)
+        }
+        .environment(\.layoutDirection, home ? .rightToLeft : .leftToRight)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(teamGradient(color, reversed: home))
+    }
+
+    // Hockey: stacked rows with records and goalies, countdown where the period clock goes.
+    private var hockey: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 1) {
+                hRow(a.awayUid, a.awayAbbr, a.awayName, a.awayColor, a.awayRecord, a.awayProbable)
+                hRow(a.homeUid, a.homeAbbr, a.homeName, a.homeColor, a.homeRecord, a.homeProbable)
+            }
+            .background(Color.white.opacity(0.08))
+            timer.frame(width: 92).frame(maxHeight: .infinity).background(Color(white: 0.06))
+        }
+        .frame(height: 70)
+    }
+
+    private func hRow(_ uid: String?, _ abbr: String, _ name: String, _ color: String, _ rec: String?, _ goalie: String?) -> some View {
+        HStack(spacing: 8) {
+            LogoMark(uid: uid, abbr: abbr, size: 26, on: color).frame(width: 50, height: 34).background(Color(hex: color))
+            Text(name).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.6)
+            Text(rec ?? "").font(.system(size: 10, weight: .semibold)).opacity(0.6).lineLimit(1)
+            Spacer(minLength: 0)
+            if let g = goalie, !g.isEmpty {
+                Text("G " + g.uppercased()).font(.system(size: 10, weight: .heavy)).opacity(0.85)
+                    .lineLimit(1).minimumScaleFactor(0.6).padding(.trailing, 8)
+            }
+        }
+        .frame(height: 34)
+    }
+
+    // Soccer: the slim bar, countdown in the clock block, last five where the scores go.
+    private var soccer: some View {
+        HStack(spacing: 0) {
+            VStack(spacing: 0) {
+                Countdown(a: a, s: s, size: 17)
+                Text(s.late == true ? "LATE" : "KO").font(.system(size: 8, weight: .heavy)).opacity(0.7)
+            }
+            .padding(.horizontal, 8).frame(maxHeight: .infinity).background(.black)
+            Rectangle().fill(Color(hex: a.awayColor)).frame(width: 10)
+            HStack(spacing: 0) {
+                sSide(a.awayUid, a.awayAbbr, a.awayForm, home: false)
+                Rectangle().fill(Color.black.opacity(0.8)).frame(width: 1.5).padding(.vertical, 8)
+                sSide(a.homeUid, a.homeAbbr, a.homeForm, home: true)
+            }
+            .background(Color(white: 0.86)).foregroundStyle(Color(white: 0.07))
+            Rectangle().fill(Color(hex: a.homeColor)).frame(width: 10)
+        }
+        .frame(height: 46)
+    }
+
+    private func sSide(_ uid: String?, _ abbr: String, _ form: String?, home: Bool) -> some View {
+        HStack(spacing: 5) {
+            LogoMark(uid: uid, abbr: abbr, size: 20, on: "dbdbdc")
+            Text(abbr).font(.system(size: 15, weight: .bold))
+            Spacer(minLength: 0)
+            if let f = form, !f.isEmpty {
+                Text(Array(f.suffix(5)).map(String.init).joined(separator: "-")).font(.system(size: 9, weight: .semibold)).opacity(0.7)
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            }
+        }
+        .environment(\.layoutDirection, home ? .rightToLeft : .leftToRight)
+        .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity)
     }
 }

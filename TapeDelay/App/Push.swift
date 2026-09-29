@@ -87,7 +87,13 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
                                    homeName: g.home.short, awayName: g.away.short,
                                    homeColor: g.home.color, awayColor: g.away.color,
                                    homeUid: g.home.uid, awayUid: g.away.uid,
-                                   homeRecord: g.home.record, awayRecord: g.away.record)
+                                   homeRecord: g.home.record, awayRecord: g.away.record,
+                                   startTime: g.date.timeIntervalSince1970, venue: g.venue,
+                                   watch: g.watch.prefix(3).joined(separator: " · "),
+                                   homeProbable: g.home.probable, awayProbable: g.away.probable,
+                                   homeProbableLine: g.home.probableLine, awayProbableLine: g.away.probableLine,
+                                   homeForm: g.home.form, awayForm: g.away.form,
+                                   delay: AppModel.shared.delay)
         _ = try Activity.request(attributes: attrs, content: .init(state: state(for: g), staleDate: nil), pushType: .token)
     }
 
@@ -96,6 +102,7 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
         var st = GameAttributes.ContentState(
             home: g.home.score ?? 0, away: g.away.score ?? 0, detail: g.detail,
             state: g.state == .post ? "post" : g.state == .pre ? "pre" : "in", period: g.period)
+        if g.state == .pre, g.date.addingTimeInterval(Double(AppModel.shared.delay) + 60) < Date() { st.late = true }
         if let s = g.situation {
             if let p = s.possession { st.possession = p == g.home.teamId ? "home" : p == g.away.teamId ? "away" : nil }
             st.down = s.downDistance
@@ -119,7 +126,14 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
         let key = "autoStarted"
         var done = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
         let running = Set(Activity<GameAttributes>.activities.map(\.attributes.gameId))
-        for g in games where (g.state == .live || g.state == .off) && !done.contains(g.id) && !running.contains(g.id) {
+        let now = Date()
+        let delay = Double(AppModel.shared.delay)
+        // Live games, and games starting within 15 minutes of reaching your stream.
+        let due = games.filter { g in
+            g.state == .live || g.state == .off
+                || (g.state == .pre && g.date.addingTimeInterval(delay - 15 * 60) <= now && g.date.addingTimeInterval(4 * 3600) > now)
+        }
+        for g in due where !done.contains(g.id) && !running.contains(g.id) {
             if (try? startActivity(for: g)) != nil { done.insert(g.id) }
         }
         UserDefaults.standard.set(Array(done.suffix(200)), forKey: key)

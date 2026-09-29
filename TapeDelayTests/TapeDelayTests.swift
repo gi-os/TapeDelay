@@ -155,3 +155,21 @@ final class LogoDetailTests: XCTestCase {
         XCTAssertFalse(LogoContrast.blends(img, on: "0c2340", key: "multi"))
     }
 }
+
+final class StartingSoonTests: XCTestCase {
+    func testRelayPregameAttributesDecode() throws {
+        let json = #"{"gameId":"401","sport":"baseball","homeAbbr":"NYM","awayAbbr":"NYY","homeName":"Mets","awayName":"Yankees","homeColor":"002d72","awayColor":"0c2340","homeUid":"u1","awayUid":"u2","homeRecord":"88-71","awayRecord":"93-66","startTime":1790000000,"venue":"Citi Field","watch":"SNY · YES","homeProbable":"J. Tong","awayProbable":"C. Early","homeProbableLine":"2-2 · 3.40","awayProbableLine":"7-5 · 3.12","homeForm":"","awayForm":"","delay":30}"#
+        let a = try JSONDecoder().decode(GameAttributes.self, from: Data(json.utf8))
+        XCTAssertEqual(a.streamStart, Date(timeIntervalSince1970: 1790000030))
+        XCTAssertEqual(a.watch, "SNY · YES")
+    }
+
+    func testWatchListsNationalFirst() throws {
+        let ev: [String: Any] = ["id": "1", "date": "2026-09-28T17:00Z", "competitions": [[
+            "status": ["type": ["state": "pre"]],
+            "broadcasts": [["market": "home", "names": ["SNY"]], ["market": "national", "names": ["ESPN", "MLB.TV"]]],
+            "competitors": [["homeAway": "home", "team": ["id": "1", "uid": "h"]], ["homeAway": "away", "team": ["id": "2", "uid": "a"]]]]]]
+        let g = try XCTUnwrap(ESPN.parseEvent(ev, league: "mlb"))
+        XCTAssertEqual(g.watch, ["ESPN", "MLB.TV", "SNY"])
+    }
+}

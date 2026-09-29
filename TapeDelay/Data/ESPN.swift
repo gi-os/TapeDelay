@@ -112,7 +112,11 @@ enum ESPN {
         guard let home = zip(comps, sides).first(where: { ($0.0["homeAway"] as? String) == "home" })?.1,
               let away = zip(comps, sides).first(where: { ($0.0["homeAway"] as? String) == "away" })?.1
         else { return nil }
-        let tv = (comp["broadcasts"] as? [J])?.flatMap { $0["names"] as? [String] ?? [] }.first
+        let all = comp["broadcasts"] as? [J] ?? []
+        let casts = all.filter { ($0["market"] as? String) == "national" } + all.filter { ($0["market"] as? String) != "national" }
+        var watch: [String] = []
+        for b in casts { for n in b["names"] as? [String] ?? [] where !watch.contains(n) { watch.append(n) } }
+        let tv = watch.first
         let note = ((comp["notes"] as? [J])?.first?["headline"] as? String)
             ?? ((ev["notes"] as? [J])?.first?["headline"] as? String)
         return Game(
@@ -123,7 +127,7 @@ enum ESPN {
             period: status["period"] as? Int ?? 0,
             home: home, away: away,
             venue: (comp["venue"] as? J)?["fullName"] as? String,
-            tv: tv, note: note,
+            tv: tv, watch: watch, note: note,
             situation: parseSituation(comp["situation"] as? J))
     }
 
@@ -146,7 +150,20 @@ enum ESPN {
             score: score(c["score"]),
             record: (c["records"] as? [J])?.first?["summary"] as? String,
             winner: c["winner"] as? Bool ?? false,
-            lines: lines)
+            lines: lines,
+            probable: ((c["probables"] as? [J])?.first?["athlete"] as? J)?["shortName"] as? String,
+            probableLine: probableLine(c),
+            form: c["form"] as? String)
+    }
+
+    static func probableLine(_ c: J) -> String? {
+        guard let p = (c["probables"] as? [J])?.first else { return nil }
+        var st: [String: String] = [:]
+        for x in p["statistics"] as? [J] ?? [] {
+            if let k = x["abbreviation"] as? String, let v = x["displayValue"] as? String { st[k] = v }
+        }
+        guard let w = st["W"], let l = st["L"] else { return p["record"] as? String }
+        return "\(w)-\(l)" + (st["ERA"].map { " · \($0)" } ?? "")
     }
 
     static func score(_ v: Any?) -> Int? {
