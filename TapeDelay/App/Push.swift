@@ -1,0 +1,104 @@
+import ActivityKit
+import UIKit
+import UserNotifications
+
+/// Push identity for the relay: the APNs device token, the Live Activity push-to-start token,
+/// and each running activity's update token.
+///
+/// All three arrive as async streams that can fire while the app is in the background (iOS
+/// wakes it briefly after the relay push-starts an activity), so the observers are started at
+/// launch, not when a screen appears.
+@MainActor
+final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    static var shared: Push?
+
+    func application(_ app: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        Push.shared = self
+        UNUserNotificationCenter.current().delegate = self
+        observeActivities()
+        Task {
+            let s = await UNUserNotificationCenter.current().notificationSettings()
+            if s.authorizationStatus == .authorized || s.authorizationStatus == .provisional {
+                app.registerForRemoteNotifications()
+            }
+        }
+        return true
+    }
+
+    /// Asked once, from onboarding or Settings.
+    func requestPermission() async -> Bool {
+        let ok = (try? await UNUserNotificationCenter.current()
+            .requestAuthorization(options: [.alert, .sound, .badge, .timeSensitive])) ?? false
+        if ok { UIApplication.shared.registerForRemoteNotifications() }
+        return ok
+    }
+
+    func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken token: Data) {
+        AppModel.shared.deviceToken = token.map { String(format: "%02x", $0) }.joined()
+    }
+
+    func application(_: UIApplication, didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        AppModel.shared.relayStatus = "Push registration failed: \(error.localizedDescription)"
+    }
+
+    // Held alerts land while the app is open too: show them as banners.
+    nonisolated func userNotificationCenter(_: UNUserNotificationCenter, willPresent _: UNNotification) async
+        -> UNNotificationPresentationOptions { [.banner, .sound, .list] }
+
+    // MARK: Live Activities
+
+    private func observeActivities() {
+        Task {
+            for await data in Activity<GameAttributes>.pushToStartTokenUpdates {
+                AppModel.shared.startToken = data.map { String(format: "%02x", $0) }.joined()
+            }
+        }
+        Task {
+            for await activity in Activity<GameAttributes>.activityUpdates {
+                watch(activity)
+            }
+        }
+        for a in Activity<GameAttributes>.activities { watch(a) }
+    }
+
+    private var watched = Set<String>()
+
+    private func watch(_ activity: Activity<GameAttributes>) {
+        guard watched.insert(activity.id).inserted else { return }
+        let game = activity.attributes.gameId
+        Task {
+            for await data in activity.pushTokenUpdates {
+                let tok = data.map { String(format: "%02x", $0) }.joined()
+                guard let dev = AppModel.shared.deviceToken else { continue }
+                try? await Relay.activity(device: dev, game: game, token: tok)
+            }
+        }
+        Task {
+            for await state in activity.activityStateUpdates where state == .dismissed || state == .ended {
+                if let dev = AppModel.shared.deviceToken { try? await Relay.activity(device: dev, game: game, token: nil) }
+            }
+        }
+    }
+
+    /// Put a game on the lock screen by hand (from the game screen).
+    static func startActivity(for g: Game) throws {
+        let attrs = GameAttributes(gameId: g.id, sport: g.kind.rawValue,
+                                   homeAbbr: g.home.abbr, awayAbbr: g.away.abbr,
+                                   homeName: g.home.short, awayName: g.away.short,
+                                   homeColor: g.home.color, awayColor: g.away.color)
+        let state = GameAttributes.ContentState(home: g.home.score ?? 0, away: g.away.score ?? 0,
+                                                detail: g.detail, state: g.state == .post ? "post" : g.state == .pre ? "pre" : "in",
+                                                period: g.period)
+        _ = try Activity.request(attributes: attrs, content: .init(state: state, staleDate: nil), pushType: .token)
+    }
+
+    static func activityRunning(_ gameId: String) -> Bool {
+        Activity<GameAttributes>.activities.contains { $0.attributes.gameId == gameId && $0.activityState == .active }
+    }
+
+    static func endActivity(_ gameId: String) async {
+        for a in Activity<GameAttributes>.activities where a.attributes.gameId == gameId {
+            await a.end(nil, dismissalPolicy: .immediate)
+        }
+    }
+}

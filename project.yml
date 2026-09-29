@@ -1,0 +1,90 @@
+name: TapeDelay
+options:
+  bundleIdPrefix: com.gios
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    TARGETED_DEVICE_FAMILY: "1"
+    DEVELOPMENT_TEAM: ""
+  configs:
+    Debug:
+      APS_ENVIRONMENT: development
+    Release:
+      APS_ENVIRONMENT: production
+targets:
+  TapeDelay:
+    type: application
+    platform: iOS
+    sources:
+      - path: TapeDelay
+      - path: Shared
+    dependencies:
+      - target: TapeDelayWidgets
+    entitlements:
+      path: TapeDelay/TapeDelay.entitlements
+      properties:
+        aps-environment: $(APS_ENVIRONMENT)
+    info:
+      path: TapeDelay/Info.plist
+      properties:
+        CFBundleDisplayName: Tape Delay
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: ""
+        ITSAppUsesNonExemptEncryption: false
+        NSSupportsLiveActivities: true
+        NSSupportsLiveActivitiesFrequentUpdates: true
+        UIBackgroundModes: [remote-notification]
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UIUserInterfaceStyle: Dark
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gios.tapedelay
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+  TapeDelayWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: TapeDelayWidgets
+      - path: Shared
+    info:
+      path: TapeDelayWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Tape Delay
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gios.tapedelay.widgets
+        GENERATE_INFOPLIST_FILE: NO
+        SKIP_INSTALL: YES
+  TapeDelayTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: TapeDelayTests
+    dependencies:
+      - target: TapeDelay
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        PRODUCT_BUNDLE_IDENTIFIER: com.gios.tapedelay.tests
+schemes:
+  TapeDelay:
+    build:
+      targets:
+        TapeDelay: all
+        TapeDelayTests: [test]
+    test:
+      targets:
+        - TapeDelayTests
