@@ -94,7 +94,7 @@ struct TeamTile: View {
         let muted = model.isMuted(team)
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top) {
-                Crest(url: team.logo, abbr: team.abbr, size: 36)
+                Crest(url: team.logo, abbr: team.abbr, size: 36, on: LogoContrast.darken(team.color, by: 0.25))
                     .frame(width: 50, height: 50)
                     .background(.black.opacity(0.25), in: .circle)
                     .overlay(Circle().stroke(.white.opacity(0.2), lineWidth: 1))
@@ -212,7 +212,7 @@ struct StandingsView: View {
                 ForEach(g.rows) { r in
                     let mine = model.followedUids.contains(r.uid)
                     GridRow {
-                        Crest(url: r.logo, abbr: r.abbr, size: 20)
+                        Crest(url: r.logo, abbr: r.abbr, size: 20, on: "1c1c1e")
                         Text(r.abbr).font(.callout.weight(mine ? .heavy : .medium))
                             .foregroundStyle(mine ? Theme.accent : .primary)
                         ForEach(Array(r.values.enumerated()), id: \.offset) { _, v in

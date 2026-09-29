@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import TapeDelay
 
 final class ParserTests: XCTestCase {
@@ -120,5 +121,26 @@ final class HoldTests: XCTestCase {
         let s = try JSONDecoder().decode(GameAttributes.ContentState.self, from: Data(json.utf8))
         XCTAssertEqual(s.bases, [true, false, false])
         XCTAssertEqual(s.outs, 1)
+    }
+}
+
+final class LogoContrastTests: XCTestCase {
+    private func solid(_ c: UIColor) -> UIImage {
+        UIGraphicsImageRenderer(size: CGSize(width: 40, height: 40)).image { ctx in
+            c.setFill(); ctx.fill(CGRect(x: 8, y: 8, width: 24, height: 24))
+        }
+    }
+
+    func testNavyCrestOnNavyGoesWhite() {
+        let navy = UIColor(red: 12 / 255, green: 35 / 255, blue: 64 / 255, alpha: 1)
+        XCTAssertTrue(LogoContrast.blends(solid(navy), on: "0c2340", key: "navy"))
+    }
+
+    func testWhiteCrestOnNavyStays() {
+        XCTAssertFalse(LogoContrast.blends(solid(.white), on: "0c2340", key: "white"))
+    }
+
+    func testDarken() {
+        XCTAssertEqual(LogoContrast.darken("ffffff", by: 0.5), "7f7f7f")
     }
 }

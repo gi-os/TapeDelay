@@ -184,7 +184,7 @@ struct TeamDisc: View {
     let side: Side
     var size: CGFloat
     var body: some View {
-        Crest(url: side.logo, abbr: side.abbr, size: size * 0.72)
+        Crest(url: side.logo, abbr: side.abbr, size: size * 0.72, on: LogoContrast.darken(side.color, by: 0.26))
             .frame(width: size, height: size)
             .background(.black.opacity(0.26), in: .circle)
             .overlay(Circle().stroke(.white.opacity(0.22), lineWidth: 1))
@@ -290,10 +290,10 @@ struct HeroCard: View {
     private var strip: some View {
         VStack(alignment: .leading, spacing: 9) {
             HStack {
-                Text(situationText).font(.subheadline.weight(.bold)).lineLimit(1)
+                Text(situationText).font(.subheadline.weight(.bold)).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer()
                 if let lp = game.situation?.lastPlay, game.kind != .football {
-                    Text(lp).font(.caption).opacity(0.75).lineLimit(1)
+                    Text(lp).font(.caption).opacity(0.75).lineLimit(1).minimumScaleFactor(0.6)
                 }
             }
             GeometryReader { geo in
@@ -358,7 +358,7 @@ struct SplitCard: View {
                     Bases(on: [s.onFirst, s.onSecond, s.onThird], size: 7)
                     if let o = s.outs { Text(countLine(outs: o, s)).font(.caption2).monospacedDigit().opacity(0.8) }
                 } else if game.state == .live, let dd = game.situation?.downDistance {
-                    Text(dd).font(.caption2.weight(.semibold)).opacity(0.8).lineLimit(1)
+                    Text(dd).font(.caption2.weight(.semibold)).opacity(0.8).lineLimit(1).minimumScaleFactor(0.6)
                 } else if game.state == .pre, let tv = game.tv {
                     Text(tv).font(.caption2).opacity(0.75)
                 }
@@ -396,10 +396,10 @@ struct SplitCard: View {
         case .live:
             HStack(spacing: 4) {
                 Circle().fill(game.held ? Theme.flag : Theme.live).frame(width: 6, height: 6)
-                Text(game.detail).font(.caption.weight(.heavy)).monospacedDigit().lineLimit(1)
+                Text(game.detail).font(.caption.weight(.heavy)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.6)
             }
         case .off:
-            Label(game.detail, systemImage: "pause.fill").font(.caption.weight(.heavy)).lineLimit(1)
+            Label(game.detail, systemImage: "pause.fill").font(.caption.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.6)
         case .post:
             if game.masked { Image(systemName: "eye.slash") }
             Text(game.detail.isEmpty ? "Final" : game.detail).font(.caption.weight(.heavy)).opacity(0.85)

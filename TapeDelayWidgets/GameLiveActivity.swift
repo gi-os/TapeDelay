@@ -28,7 +28,7 @@ struct GameLiveActivity: Widget {
                     MiniDiamond(bases: s.bases ?? [false, false, false], size: 5)
                 } else {
                     HStack(spacing: 4) {
-                        LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18)
+                        LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18, on: "000000")
                         Text("\(s.away)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
                     }
                 }
@@ -38,7 +38,7 @@ struct GameLiveActivity: Widget {
                 } else {
                     HStack(spacing: 4) {
                         Text("\(s.home)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
-                        LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18)
+                        LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18, on: "000000")
                     }
                 }
             } minimal: {
@@ -84,7 +84,7 @@ private struct FootLine: View {
     var body: some View {
         if let text, !text.isEmpty {
             HStack(spacing: 8) {
-                Text(text).font(.system(size: 12)).foregroundStyle(.white.opacity(0.82)).lineLimit(1)
+                Text(text).font(.system(size: 12)).foregroundStyle(.white.opacity(0.82)).lineLimit(2).minimumScaleFactor(0.85)
                 Spacer(minLength: 0)
                 HeldTag()
             }
@@ -163,8 +163,8 @@ struct FootballBug: View {
                     .font(.system(size: 36, weight: .black).italic()).monospacedDigit()
                     .contentTransition(.numericText())
                     HStack(spacing: 10) {
-                        Text(s.isFinal ? "FINAL" : s.detail.uppercased()).lineLimit(1)
-                        if s.isLive, let d = s.down { Text(d.uppercased()).foregroundStyle(flagYellow).lineLimit(1) }
+                        Text(s.isFinal ? "FINAL" : s.detail.uppercased()).lineLimit(1).minimumScaleFactor(0.55)
+                        if s.isLive, let d = s.down { Text(d.uppercased()).foregroundStyle(flagYellow).lineLimit(1).minimumScaleFactor(0.55) }
                     }
                     .font(.system(size: 12, weight: .heavy).italic())
                 }
@@ -190,7 +190,7 @@ struct FootballBug: View {
     private func half(_ uid: String?, _ abbr: String, _ color: String, _ rec: String?, _ to: Int?, home: Bool) -> some View {
         ZStack(alignment: home ? .trailing : .leading) {
             teamGradient(color, reversed: home)
-            LogoMark(uid: uid, abbr: abbr, size: 64)
+            LogoMark(uid: uid, abbr: abbr, size: 64, on: color)
                 .offset(x: home ? 8 : -8)
                 .opacity(0.95)
             VStack(alignment: home ? .trailing : .leading) {
@@ -271,7 +271,7 @@ struct BaseballBug: View {
 
     private func row(_ uid: String?, _ abbr: String, _ color: String, _ score: Int) -> some View {
         HStack(spacing: 2) {
-            LogoMark(uid: uid, abbr: abbr, size: 24)
+            LogoMark(uid: uid, abbr: abbr, size: 24, on: color)
                 .frame(width: 44, height: 32)
                 .background(Color(hex: color))
             Text("\(score)").font(.system(size: 20, weight: .heavy)).monospacedDigit()
@@ -283,9 +283,9 @@ struct BaseballBug: View {
     private func person(_ tag: String, _ name: String?, _ line: String?) -> some View {
         HStack(spacing: 5) {
             Text(tag).opacity(0.6)
-            Text((name ?? "—").uppercased()).lineLimit(1)
+            Text((name ?? "—").uppercased()).lineLimit(1).minimumScaleFactor(0.55)
             Spacer(minLength: 0)
-            if let line { Text(line).opacity(0.8).lineLimit(1) }
+            if let line { Text(line).opacity(0.8).lineLimit(1).minimumScaleFactor(0.55) }
         }
         .font(.system(size: 10.5, weight: .heavy))
     }
@@ -318,7 +318,7 @@ struct BasketballBug: View {
     private func half(_ uid: String?, _ abbr: String, _ color: String, _ score: Int, _ to: Int?, home: Bool) -> some View {
         let leading = s.possession == (home ? "home" : "away")
         let items = HStack(spacing: 6) {
-            LogoMark(uid: uid, abbr: abbr, size: 30)
+            LogoMark(uid: uid, abbr: abbr, size: 30, on: color)
             VStack(alignment: home ? .trailing : .leading, spacing: 3) {
                 HStack(spacing: 3) {
                     Text(abbr).font(.system(size: 13, weight: .black))
@@ -369,10 +369,10 @@ struct HockeyBug: View {
 
     private func row(_ uid: String?, _ abbr: String, _ name: String, _ color: String, _ score: Int) -> some View {
         HStack(spacing: 10) {
-            LogoMark(uid: uid, abbr: abbr, size: 26)
+            LogoMark(uid: uid, abbr: abbr, size: 26, on: color)
                 .frame(width: 50, height: 34)
                 .background(Color(hex: color))
-            Text(name).font(.system(size: 13, weight: .bold)).lineLimit(1)
+            Text(name).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.55)
             Spacer(minLength: 0)
             Text("\(score)").font(.system(size: 22, weight: .black)).monospacedDigit()
                 .padding(.trailing, 12).contentTransition(.numericText())
@@ -414,7 +414,7 @@ struct SoccerBug: View {
 
     private func side(_ uid: String?, _ abbr: String, _ score: Int, home: Bool) -> some View {
         HStack(spacing: 6) {
-            LogoMark(uid: uid, abbr: abbr, size: 22)
+            LogoMark(uid: uid, abbr: abbr, size: 22, on: "dbdbdc")
             Text(abbr).font(.system(size: 16, weight: .bold))
             Spacer(minLength: 0)
             Text("\(score)").font(.system(size: 18, weight: .bold)).monospacedDigit().contentTransition(.numericText())
@@ -433,7 +433,7 @@ private struct IslandSide: View {
     var body: some View {
         HStack(spacing: 6) {
             if home { Text("\(s.home)").font(.system(size: 28, weight: .black)).monospacedDigit() }
-            LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: 30)
+            LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: 30, on: "000000")
             if !home { Text("\(s.away)").font(.system(size: 28, weight: .black)).monospacedDigit() }
         }
         .contentTransition(.numericText())
@@ -445,9 +445,9 @@ private struct IslandCenter: View {
     let a: GameAttributes, s: GameAttributes.ContentState
     var body: some View {
         VStack(spacing: 2) {
-            Text(s.isFinal ? "FINAL" : s.detail).font(.system(size: 12, weight: .heavy)).monospacedDigit().lineLimit(1)
+            Text(s.isFinal ? "FINAL" : s.detail).font(.system(size: 12, weight: .heavy)).monospacedDigit().lineLimit(1).minimumScaleFactor(0.55)
             if a.sport == "football", s.isLive, let d = s.down {
-                Text(d).font(.system(size: 11, weight: .heavy)).foregroundStyle(flagYellow).lineLimit(1)
+                Text(d).font(.system(size: 11, weight: .heavy)).foregroundStyle(flagYellow).lineLimit(1).minimumScaleFactor(0.55)
             }
         }
     }
@@ -465,7 +465,7 @@ private struct IslandBottom: View {
                 Text("Ball on \(spot)").font(.system(size: 11, weight: .bold))
             }
             if let lp = s.lastPlay {
-                Text(lp).font(.system(size: 11)).foregroundStyle(.white.opacity(0.75)).lineLimit(1)
+                Text(lp).font(.system(size: 11)).foregroundStyle(.white.opacity(0.75)).lineLimit(1).minimumScaleFactor(0.55)
             }
             Spacer(minLength: 0)
             HeldTag()

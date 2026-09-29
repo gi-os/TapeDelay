@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 enum Theme {
     static let flag = Color(red: 1.0, green: 0.776, blue: 0.125)   // penalty-flag yellow, the icon
@@ -28,23 +29,50 @@ struct Backdrop: View {
     }
 }
 
+/// A team logo from ESPN. `on` is the colour it sits on; a logo drawn in that same colour (a navy
+/// crest on navy) is shown as a white silhouette so it doesn't disappear.
 struct Crest: View {
     let url: URL?
     var abbr: String = ""
     var size: CGFloat = 28
+    var on: String? = nil
+    @State private var image: UIImage?
 
     var body: some View {
-        AsyncImage(url: url, transaction: .init(animation: .easeOut(duration: 0.2))) { phase in
-            if let img = phase.image {
-                img.resizable().scaledToFit()
+        Group {
+            if let image {
+                if let on, LogoContrast.blends(image, on: on, key: url?.absoluteString ?? abbr) {
+                    Image(uiImage: image).renderingMode(.template).resizable().scaledToFit().foregroundStyle(.white)
+                } else {
+                    Image(uiImage: image).resizable().scaledToFit()
+                }
             } else {
-                Text(abbr.prefix(3))
+                Text(abbr.prefix(4))
                     .font(.system(size: size * 0.34, weight: .heavy, design: .rounded))
+                    .minimumScaleFactor(0.5)
                     .foregroundStyle(.secondary)
             }
         }
         .frame(width: size, height: size)
+        .task(id: url) {
+            guard let url else { return }
+            image = await LogoLoader.shared.image(url)
+        }
     }
+}
+
+/// In-memory logo cache over URLSession's disk cache.
+actor LogoLoader {
+    static let shared = LogoLoader()
+    private var memo: [URL: UIImage] = [:]
+
+    func image(_ url: URL) async -> UIImage? {
+        if let hit = memo[url] { return hit }
+        guard let (data, _) = try? await URLSession.shared.data(from: url), let img = UIImage(data: data) else { return nil }
+        memo[url] = img
+        return img
+    }
+}
 }
 
 /// "30s behind" — the thing this app is for, always on screen.
@@ -61,7 +89,7 @@ struct DelayPill: View {
                     .font(.system(.subheadline, design: .monospaced).weight(.semibold))
                     .contentTransition(.numericText())
                 if model.delay > 0 {
-                    Text(model.presetName).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    Text(model.presetName).font(.caption).foregroundStyle(.secondary).lineLimit(1).minimumScaleFactor(0.6)
                 }
             }
             .padding(.horizontal, 14).padding(.vertical, 9)
