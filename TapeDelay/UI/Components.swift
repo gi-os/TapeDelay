@@ -73,7 +73,6 @@ actor LogoLoader {
         return img
     }
 }
-}
 
 /// "30s behind" — the thing this app is for, always on screen.
 struct DelayPill: View {
