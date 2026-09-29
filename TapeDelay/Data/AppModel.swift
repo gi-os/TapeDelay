@@ -99,6 +99,7 @@ final class AppModel {
         }
         games = await hold(all)
         lastRefresh = now
+        if prefs.liveActivities { Push.autoStart(games.filter { !$0.masked }) }
         lastError = failed.isEmpty ? nil : "Couldn't load \(failed.joined(separator: ", "))"
     }
 

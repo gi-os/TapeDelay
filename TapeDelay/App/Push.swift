@@ -96,6 +96,21 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
         Activity<GameAttributes>.activities.contains { $0.attributes.gameId == gameId && $0.activityState == .active }
     }
 
+    /// Auto-start, the app-side half. The relay push-starts an activity when a followed game
+    /// begins; this covers the cases it can't (no push-to-start token yet, notifications
+    /// declined, the game already under way when you opened the app). Each game is started at
+    /// most once, so an activity you swipe away stays away.
+    static func autoStart(_ games: [Game]) {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+        let key = "autoStarted"
+        var done = Set(UserDefaults.standard.stringArray(forKey: key) ?? [])
+        let running = Set(Activity<GameAttributes>.activities.map(\.attributes.gameId))
+        for g in games where (g.state == .live || g.state == .off) && !done.contains(g.id) && !running.contains(g.id) {
+            if (try? startActivity(for: g)) != nil { done.insert(g.id) }
+        }
+        UserDefaults.standard.set(Array(done.suffix(200)), forKey: key)
+    }
+
     static func endActivity(_ gameId: String) async {
         for a in Activity<GameAttributes>.activities where a.attributes.gameId == gameId {
             await a.end(nil, dismissalPolicy: .immediate)
