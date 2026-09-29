@@ -20,8 +20,23 @@ struct GameAttributes: ActivityAttributes {
         var strikes: Int?
         var bases: [Bool]?
         var lastPlay: String?
+        // Scorebug extras, all optional so an older relay's pushes still decode.
+        var clock: String?
+        var spot: String?
+        var redZone: Bool?
+        var homeTimeouts: Int?
+        var awayTimeouts: Int?
+        var pitcher: String?
+        var pitcherLine: String?
+        var batter: String?
+        var batterLine: String?
+        var homeHits: Int?
+        var awayHits: Int?
+        var homeErrors: Int?
+        var awayErrors: Int?
 
         var isFinal: Bool { state == "post" }
+        var isLive: Bool { state == "in" }
     }
 
     var gameId: String
@@ -32,6 +47,10 @@ struct GameAttributes: ActivityAttributes {
     var awayName: String
     var homeColor: String
     var awayColor: String
+    var homeUid: String?
+    var awayUid: String?
+    var homeRecord: String?
+    var awayRecord: String?
 }
 
 extension Color {

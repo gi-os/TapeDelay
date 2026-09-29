@@ -85,11 +85,25 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
         let attrs = GameAttributes(gameId: g.id, sport: g.kind.rawValue,
                                    homeAbbr: g.home.abbr, awayAbbr: g.away.abbr,
                                    homeName: g.home.short, awayName: g.away.short,
-                                   homeColor: g.home.color, awayColor: g.away.color)
-        let state = GameAttributes.ContentState(home: g.home.score ?? 0, away: g.away.score ?? 0,
-                                                detail: g.detail, state: g.state == .post ? "post" : g.state == .pre ? "pre" : "in",
-                                                period: g.period)
-        _ = try Activity.request(attributes: attrs, content: .init(state: state, staleDate: nil), pushType: .token)
+                                   homeColor: g.home.color, awayColor: g.away.color,
+                                   homeUid: g.home.uid, awayUid: g.away.uid,
+                                   homeRecord: g.home.record, awayRecord: g.away.record)
+        _ = try Activity.request(attributes: attrs, content: .init(state: state(for: g), staleDate: nil), pushType: .token)
+    }
+
+    /// The same fields the relay sends, from the app's own copy of the game.
+    static func state(for g: Game) -> GameAttributes.ContentState {
+        var st = GameAttributes.ContentState(
+            home: g.home.score ?? 0, away: g.away.score ?? 0, detail: g.detail,
+            state: g.state == .post ? "post" : g.state == .pre ? "pre" : "in", period: g.period)
+        if let s = g.situation {
+            if let p = s.possession { st.possession = p == g.home.teamId ? "home" : p == g.away.teamId ? "away" : nil }
+            st.down = s.downDistance
+            st.outs = s.outs; st.balls = s.balls; st.strikes = s.strikes
+            st.bases = [s.onFirst, s.onSecond, s.onThird]
+            st.lastPlay = s.lastPlay
+        }
+        return st
     }
 
     static func activityRunning(_ gameId: String) -> Bool {

@@ -107,6 +107,12 @@ final class AppModel {
         }
         games = await hold(all)
         lastRefresh = now
+        // Logos for the lock screen, which can't download its own.
+        let crests = Dictionary(games.flatMap { [($0.home.uid, $0.home.logo), ($0.away.uid, $0.away.logo)] }
+            .compactMap { uid, url in url.map { (uid, $0) } }, uniquingKeysWith: { a, _ in a })
+        Task.detached(priority: .utility) {
+            for (uid, url) in crests where !LogoStore.has(uid) { await LogoStore.fetch(uid: uid, from: url) }
+        }
         if prefs.liveActivities {
             let loud = Set(follows.map(\.uid)).subtracting(muted)
             Push.autoStart(games.filter { !$0.masked && $0.involves(loud) })
