@@ -1,9 +1,10 @@
 import SwiftUI
 
 enum Theme {
-    static let accent = Color(red: 1.0, green: 0.36, blue: 0.24)   // tape-counter orange
+    static let flag = Color(red: 1.0, green: 0.776, blue: 0.125)   // penalty-flag yellow, the icon
+    static let accent = flag
     static let live = Color(red: 1.0, green: 0.27, blue: 0.27)
-    static let held = Color(red: 1.0, green: 0.72, blue: 0.2)
+    static let held = flag
     static let mono = Font.system(.body, design: .monospaced)
 }
 

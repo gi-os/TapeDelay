@@ -90,6 +90,13 @@ final class AppModel {
             }
         }
         all.sort { $0.date < $1.date }
+        // ESPN's scoreboard crest is the light-background one; a followed team has the
+        // dark-background crest from the teams endpoint, which reads better on the colour cards.
+        let dark = Dictionary(follows.compactMap { t in t.logo.map { (t.uid, $0) } }, uniquingKeysWith: { a, _ in a })
+        for i in all.indices {
+            if let u = dark[all[i].home.uid] { all[i].home.logo = u }
+            if let u = dark[all[i].away.uid] { all[i].away.logo = u }
+        }
         games = await hold(all)
         lastRefresh = now
         lastError = failed.isEmpty ? nil : "Couldn't load \(failed.joined(separator: ", "))"

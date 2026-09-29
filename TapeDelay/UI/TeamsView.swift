@@ -37,8 +37,11 @@ struct TeamsView: View {
             List {
                 if !model.follows.isEmpty && query.isEmpty {
                     Section("Following") {
-                        ForEach(model.follows) { t in row(t) }
-                            .onDelete { model.follows.remove(atOffsets: $0) }
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
+                            ForEach(model.follows) { t in tile(t) }
+                        }
+                        .listRowInsets(EdgeInsets())
+                        .listRowBackground(Color.clear)
                     }
                 }
                 Section(League.byId(league)?.name ?? "") {
@@ -63,6 +66,31 @@ struct TeamsView: View {
     private func filtered(_ list: [Team]) -> [Team] {
         guard !query.isEmpty else { return list }
         return list.filter { $0.name.localizedCaseInsensitiveContains(query) || $0.abbr.localizedCaseInsensitiveContains(query) }
+    }
+
+    /// A followed team as a tile in its own colour. Hold to unfollow.
+    private func tile(_ t: Team) -> some View {
+        let c = Color.team(t.color)
+        return VStack(alignment: .leading) {
+            Crest(url: t.logo, abbr: t.abbr, size: 34)
+                .frame(width: 46, height: 46)
+                .background(.black.opacity(0.25), in: .circle)
+            Spacer(minLength: 8)
+            HStack(alignment: .lastTextBaseline) {
+                Text(t.short).font(.headline.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.7)
+                Spacer()
+                Text(League.byId(t.league)?.name ?? "").font(.caption2.weight(.semibold)).opacity(0.8)
+            }
+        }
+        .foregroundStyle(.white)
+        .padding(14)
+        .frame(height: 118)
+        .background(LinearGradient(colors: [c.mix(with: .white, by: 0.08), c.mix(with: .black, by: 0.45)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    in: .rect(cornerRadius: 26))
+        .contextMenu {
+            Button("Unfollow", systemImage: "star.slash", role: .destructive) { withAnimation { model.toggle(t) } }
+        }
     }
 
     private func row(_ t: Team) -> some View {
