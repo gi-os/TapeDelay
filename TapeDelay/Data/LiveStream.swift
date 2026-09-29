@@ -62,9 +62,10 @@ final class LiveStream {
 
     /// Apply everything that has now waited out the delay.
     private func flush() {
-        let hold = Double(AppModel.shared.delay)
+        let delay = Double(AppModel.shared.delay)
         let now = Date()
-        while let first = buffer.first, first.at.addingTimeInterval(hold) <= now {
+        // The delay counts from the play; each snapshot already trails it by its feed's lag.
+        while let first = buffer.first, first.at.addingTimeInterval(max(0, delay - (first.snap.lag ?? 0))) <= now {
             buffer.removeFirst()
             AppModel.shared.apply(first.snap)
         }

@@ -55,6 +55,8 @@ enum Relay {
         let away: Side?
         let sit: Sit?
         let held: Bool?
+        /// Seconds this source trails the play (ESPN ~20, MLB's own feed ~2).
+        let lag: Double?
     }
 
     /// The newest thing the relay knows about a game, and when it learned it (for stream sync).
@@ -135,17 +137,18 @@ struct DelayPreset: Identifiable, Hashable {
     let seconds: Int
     let note: String
 
+    /// Counted from the play itself (the relay knows how far each feed trails it), so the same
+    /// number means the same thing for every sport. Typical figures; streams drift, so sync.
     static let all: [DelayPreset] = [
-        DelayPreset(name: "Live", seconds: 0, note: "No delay: alerts as they happen"),
-        DelayPreset(name: "Cable / antenna", seconds: 10, note: "Broadcast TV runs a few seconds behind"),
-        DelayPreset(name: "YouTube TV", seconds: 30, note: "Default broadcast delay"),
-        DelayPreset(name: "Hulu + Live TV", seconds: 40, note: ""),
-        DelayPreset(name: "Fubo", seconds: 35, note: ""),
-        DelayPreset(name: "Sling", seconds: 40, note: ""),
-        DelayPreset(name: "Peacock / Paramount+", seconds: 45, note: ""),
-        DelayPreset(name: "ESPN app / Max", seconds: 45, note: ""),
-        DelayPreset(name: "MLB.tv / NBA League Pass", seconds: 50, note: ""),
-        DelayPreset(name: "Apple TV (MLS)", seconds: 50, note: ""),
+        DelayPreset(name: "Live", seconds: 0, note: "At the game, or on the radio"),
+        DelayPreset(name: "Cable / antenna", seconds: 20, note: "About where ESPN's own feed runs"),
+        DelayPreset(name: "YouTube TV", seconds: 45, note: ""),
+        DelayPreset(name: "Fubo", seconds: 50, note: ""),
+        DelayPreset(name: "Hulu + Live TV", seconds: 55, note: ""),
+        DelayPreset(name: "Sling", seconds: 55, note: ""),
+        DelayPreset(name: "Peacock / Paramount+", seconds: 60, note: ""),
+        DelayPreset(name: "ESPN app / Max", seconds: 60, note: ""),
+        DelayPreset(name: "MLB.tv / NBA League Pass", seconds: 65, note: ""),
+        DelayPreset(name: "Apple TV (MLS)", seconds: 65, note: ""),
         DelayPreset(name: "Watching later", seconds: 600, note: "Ten minutes behind"),
-    ]
-}
+    ]}
