@@ -28,7 +28,7 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
     /// Asked once, from onboarding or Settings.
     func requestPermission() async -> Bool {
         let ok = (try? await UNUserNotificationCenter.current()
-            .requestAuthorization(options: [.alert, .sound, .badge, .timeSensitive])) ?? false
+            .requestAuthorization(options: [.alert, .sound, .badge])) ?? false
         if ok { UIApplication.shared.registerForRemoteNotifications() }
         return ok
     }
