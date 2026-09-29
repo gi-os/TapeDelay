@@ -32,7 +32,7 @@ targets:
     info:
       path: TapeDelay/Info.plist
       properties:
-        CFBundleDisplayName: Tape Delay
+        CFBundleDisplayName: Delay of Game
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen:
@@ -59,7 +59,7 @@ targets:
     info:
       path: TapeDelayWidgets/Info.plist
       properties:
-        CFBundleDisplayName: Tape Delay
+        CFBundleDisplayName: Delay of Game
         CFBundleShortVersionString: $(MARKETING_VERSION)
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:

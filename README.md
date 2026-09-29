@@ -1,4 +1,4 @@
-# Tape Delay
+# Delay of Game
 
 Sports scores for iPhone that wait for your stream. You follow teams, say how far behind live
 you're watching (YouTube TV about 30s, Peacock about 45s, or any number you pick), and every
