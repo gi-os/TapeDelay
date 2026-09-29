@@ -63,17 +63,21 @@ struct GameView: View {
                         Image(systemName: "eye.slash").font(.system(size: 44, weight: .bold))
                     } else if game.state == .pre {
                         Text(game.date, format: .dateTime.hour().minute()).font(.system(size: 38, weight: .black))
+                            .lineLimit(1).minimumScaleFactor(0.5).fixedSize(horizontal: false, vertical: true)
                         Text(game.date, format: .dateTime.weekday(.wide).month().day()).font(.subheadline.weight(.bold)).opacity(0.8)
+                            .lineLimit(1).minimumScaleFactor(0.6)
                     } else {
                         HStack(spacing: 16) {
                             Text("\(game.away.score ?? 0)").opacity((game.away.score ?? 0) < (game.home.score ?? 0) ? 0.6 : 1)
                             Text("\(game.home.score ?? 0)").opacity((game.home.score ?? 0) < (game.away.score ?? 0) ? 0.6 : 1)
                         }
                         .font(.system(size: 68, weight: .black)).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.5)
                         .contentTransition(.numericText())
                     }
                     if game.state != .pre {
                         Text(game.detail).font(.subheadline.weight(.heavy)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.6)
                     }
                 }
                 Spacer(minLength: 0)

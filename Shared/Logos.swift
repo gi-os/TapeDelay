@@ -114,15 +114,22 @@ enum LogoContrast {
         }
         guard ok else { return false }
         var opaque = 0, close = 0
+        var bins: [Int: Int] = [:]
         for i in stride(from: 0, to: px.count, by: 4) {
             let a = Double(px[i + 3]) / 255
             guard a > 0.5 else { continue }
             opaque += 1
-            let r = Double(px[i]) / 255 / a, g = Double(px[i + 1]) / 255 / a, b = Double(px[i + 2]) / 255 / a
+            let r = min(1, Double(px[i]) / 255 / a), g = min(1, Double(px[i + 1]) / 255 / a), b = min(1, Double(px[i + 2]) / 255 / a)
             let d = ((r - br) * (r - br) * 0.3 + (g - bgc) * (g - bgc) * 0.59 + (b - bb) * (b - bb) * 0.11).squareRoot()
             if d < 0.16 { close += 1 }
+            bins[Int(r * 3.99) * 16 + Int(g * 3.99) * 4 + Int(b * 3.99), default: 0] += 1
         }
-        let result = opaque > 0 && Double(close) / Double(opaque) > 0.45
+        guard opaque > 0 else { cache[k] = false; return false }
+        // Only simple marks go white: one colour, maybe with an outline (the Yankees' NY, the
+        // Phillies' P). A detailed, multicolour logo (the Liberty's) keeps its colours even if
+        // part of it matches the background, because a silhouette would lose the drawing.
+        let colours = bins.values.filter { Double($0) / Double(opaque) > 0.06 }.count
+        let result = colours <= 2 && Double(close) / Double(opaque) > 0.45
         cache[k] = result
         return result
     }

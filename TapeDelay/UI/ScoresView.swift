@@ -226,8 +226,10 @@ struct HeroCard: View {
                     } else if game.state == .pre {
                         Text(game.date, format: .dateTime.hour().minute())
                             .font(.system(size: 34, weight: .black)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.5)
                         Text(game.date, format: .dateTime.weekday(.wide))
                             .font(.subheadline.weight(.bold)).opacity(0.8)
+                            .lineLimit(1).minimumScaleFactor(0.6)
                     } else {
                         HStack(alignment: .firstTextBaseline, spacing: 14) {
                             score(game.away, against: game.home)
@@ -237,6 +239,7 @@ struct HeroCard: View {
                         .monospacedDigit()
                         .contentTransition(.numericText())
                         Text(game.detail).font(.subheadline.weight(.heavy)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.6)
                     }
                 }
                 Spacer(minLength: 0)
@@ -405,7 +408,7 @@ struct SplitCard: View {
             Text(game.detail.isEmpty ? "Final" : game.detail).font(.caption.weight(.heavy)).opacity(0.85)
         case .pre:
             Text(game.date, format: .dateTime.weekday(.abbreviated).hour().minute())
-                .font(.subheadline.weight(.heavy))
+                .font(.subheadline.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.6)
         }
     }
 }

@@ -144,3 +144,14 @@ final class LogoContrastTests: XCTestCase {
         XCTAssertEqual(LogoContrast.darken("ffffff", by: 0.5), "7f7f7f")
     }
 }
+
+final class LogoDetailTests: XCTestCase {
+    func testDetailedMulticolourLogoKeepsItsColours() {
+        // Four colour bands, one of them the background colour: not simple, so no silhouette.
+        let img = UIGraphicsImageRenderer(size: CGSize(width: 40, height: 40)).image { ctx in
+            let cs: [UIColor] = [UIColor(red: 12 / 255, green: 35 / 255, blue: 64 / 255, alpha: 1), .orange, .systemTeal, .white]
+            for (i, c) in cs.enumerated() { c.setFill(); ctx.fill(CGRect(x: 0, y: i * 10, width: 40, height: 10)) }
+        }
+        XCTAssertFalse(LogoContrast.blends(img, on: "0c2340", key: "multi"))
+    }
+}
