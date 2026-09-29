@@ -332,6 +332,17 @@ struct BasketballBug: View {
 
     private var periodLabel: String { s.isFinal ? "" : s.period > 4 ? "OT" : "Q\(max(1, s.period))" }
 
+    /// BONUS once the team is in the penalty, else the team foul count (from the league feed).
+    @ViewBuilder private func fouls(home: Bool) -> some View {
+        let bonus = (home ? s.homeBonus : s.awayBonus) == true
+        if bonus {
+            Text("BONUS").font(.system(size: 8, weight: .black)).padding(.horizontal, 4).padding(.vertical, 1)
+                .background(.black.opacity(0.55), in: .rect(cornerRadius: 3))
+        } else if let f = home ? s.homeFouls : s.awayFouls {
+            Text("\(f) FOULS").font(.system(size: 8, weight: .heavy)).opacity(0.8)
+        }
+    }
+
     private func half(_ uid: String?, _ abbr: String, _ color: String, _ score: Int, _ to: Int?, home: Bool) -> some View {
         let leading = s.possession == (home ? "home" : "away")
         let items = HStack(spacing: 6) {
@@ -342,6 +353,7 @@ struct BasketballBug: View {
                     if leading { Circle().fill(flagYellow).frame(width: 5, height: 5) }
                 }
                 if let to { Pips(filled: to, total: 7, w: 4, h: 3) }
+                fouls(home: home)
             }
             Spacer(minLength: 0)
             Text("\(score)").font(.system(size: 26, weight: .black)).monospacedDigit().contentTransition(.numericText())

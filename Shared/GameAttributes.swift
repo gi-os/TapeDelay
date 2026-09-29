@@ -36,6 +36,10 @@ struct GameAttributes: ActivityAttributes {
         var awayErrors: Int?
         /// Past start time with nothing under way (a hold, a rain delay before first pitch).
         var late: Bool?
+        var homeBonus: Bool?
+        var awayBonus: Bool?
+        var homeFouls: Int?
+        var awayFouls: Int?
 
         var isFinal: Bool { state == "post" }
         var isLive: Bool { state == "in" }
