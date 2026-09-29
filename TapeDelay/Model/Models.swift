@@ -10,6 +10,8 @@ struct League: Identifiable, Hashable, Codable {
     var group: String? = nil  // college: ESPN group filter
     var extras: [String] = [] // cup competitions that reuse this league's team ids (MLS)
     let kind: Sport
+    var provider: Provider = .espn
+    var sportId: Int? = nil   // MLB StatsAPI sport id (MiLB levels)
 
     var path: String { "\(sport)/\(slug)" }
 
@@ -24,12 +26,20 @@ struct League: Identifiable, Hashable, Codable {
         League(id: "nwsl", name: "NWSL", sport: "soccer", slug: "usa.nwsl", kind: .soccer),
         League(id: "cfb", name: "College Football", sport: "football", slug: "college-football",
                group: "80", kind: .football),
+        League(id: "fcs", name: "FCS", sport: "football", slug: "college-football",
+               group: "81", kind: .football),
+        League(id: "aaa", name: "Triple-A", sport: "baseball", slug: "milb", kind: .baseball, provider: .statsapi, sportId: 11),
+        League(id: "aa", name: "Double-A", sport: "baseball", slug: "milb", kind: .baseball, provider: .statsapi, sportId: 12),
+        League(id: "higha", name: "High-A", sport: "baseball", slug: "milb", kind: .baseball, provider: .statsapi, sportId: 13),
+        League(id: "singlea", name: "Single-A", sport: "baseball", slug: "milb", kind: .baseball, provider: .statsapi, sportId: 14),
         League(id: "epl", name: "Premier League", sport: "soccer", slug: "eng.1", kind: .soccer),
         League(id: "ucl", name: "Champions League", sport: "soccer", slug: "uefa.champions", kind: .soccer),
     ]
 
     static func byId(_ id: String) -> League? { all.first { $0.id == id } }
 }
+
+enum Provider: String, Codable, Hashable { case espn, statsapi }
 
 enum Sport: String, Codable, Hashable {
     case football, baseball, basketball, hockey, soccer
@@ -57,6 +67,7 @@ struct Team: Identifiable, Hashable, Codable {
     let abbr: String
     let color: String
     let logo: URL?
+    var alt: String? = nil   // ESPN alternateColor, the second colour in the moving gradient
 }
 
 enum GameState: String, Codable { case pre, live, post, off }

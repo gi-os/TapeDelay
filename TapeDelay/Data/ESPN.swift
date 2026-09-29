@@ -34,15 +34,13 @@ enum ESPN {
     }
 
     static func scoreboard(_ league: League, from: Date, to: Date) async throws -> [Game] {
-        var paths = [league.slug] + league.extras
-        paths = Array(Set(paths))
+        if league.provider == .statsapi { return try await StatsAPI.schedule(league, from: from, to: to) }
+        let paths = Array(Set([league.slug] + league.extras))
         var out: [Game] = []
         try await withThrowingTaskGroup(of: [Game].self) { g in
             for slug in paths {
                 g.addTask {
-                    var url = "\(site)/\(league.sport)/\(slug)/scoreboard?limit=1000&dates=\(dayString(from))-\(dayString(to))"
-                    if let grp = league.group { url += "&groups=\(grp)" }
-                    do { return parseScoreboard(try await get(url), league: league.id) }
+                    do { return try await window(league, slug: slug, from: from, to: to) }
                     catch { if slug == league.slug { throw error } else { return [] } }
                 }
             }
@@ -50,6 +48,50 @@ enum ESPN {
         }
         var seen = Set<String>()
         return out.filter { seen.insert($0.id).inserted }.sorted { $0.date < $1.date }
+    }
+
+    /// Since 2026-09-15 ESPN answers every `dates=start-end` scoreboard with HTTP 400 ("Failed
+    /// to get events endpoint."), while a single month, a day, or no `dates` at all still work
+    /// (the same break BrightSports hit; see its SportsRepository). So: the range while it
+    /// works, else each calendar month the window touches, trimmed back to the window, else
+    /// ESPN's own "now". A refused range is parked for six hours so a broken endpoint costs
+    /// one request per league, not three.
+    nonisolated(unsafe) private static var rangeParkedUntil = Date.distantPast
+
+    private static func window(_ league: League, slug: String, from: Date, to: Date) async throws -> [Game] {
+        let base = "\(site)/\(league.sport)/\(slug)/scoreboard?limit=1000" + (league.group.map { "&groups=\($0)" } ?? "")
+        if Date() >= rangeParkedUntil {
+            if let doc = try? await get(base + "&dates=\(dayString(from))-\(dayString(to))"), doc["events"] != nil {
+                return parseScoreboard(doc, league: league.id)
+            }
+            rangeParkedUntil = Date().addingTimeInterval(6 * 3600)
+        }
+        var months: [String] = []
+        var d = Calendar.current.date(from: Calendar.current.dateComponents([.year, .month], from: from))!
+        while d <= to {
+            months.append(monthString(d))
+            d = Calendar.current.date(byAdding: .month, value: 1, to: d)!
+        }
+        var games: [Game] = []
+        var any = false
+        for m in months {
+            if let doc = try? await get(base + "&dates=\(m)") {
+                any = true
+                games += parseScoreboard(doc, league: league.id)
+            }
+        }
+        let start = Calendar.current.startOfDay(for: from)
+        let end = Calendar.current.startOfDay(for: to).addingTimeInterval(86400)
+        if any { return games.filter { $0.date >= start && $0.date < end } }
+        return parseScoreboard(try await get(base), league: league.id)
+    }
+
+    static func monthString(_ d: Date) -> String {
+        let f = DateFormatter()
+        f.calendar = Calendar(identifier: .gregorian)
+        f.timeZone = .current
+        f.dateFormat = "yyyyMM"
+        return f.string(from: d)
     }
 
     static func parseScoreboard(_ doc: J, league: String) -> [Game] {
@@ -146,6 +188,7 @@ enum ESPN {
     // MARK: teams
 
     static func teams(_ league: League) async throws -> [Team] {
+        if league.provider == .statsapi { return try await StatsAPI.teams(league) }
         if league.group != nil {
             // `teams?groups=` is ignored; the standings tree carries full team objects.
             return try await standings(league).flatMap(\.rows).map {
@@ -164,13 +207,15 @@ enum ESPN {
                         short: t["shortDisplayName"] as? String ?? t["name"] as? String ?? "",
                         abbr: t["abbreviation"] as? String ?? "",
                         color: t["color"] as? String ?? "888888",
-                        logo: (dark?["href"] as? String).flatMap(URL.init(string:)))
+                        logo: (dark?["href"] as? String).flatMap(URL.init(string:)),
+                        alt: t["alternateColor"] as? String)
         }.sorted { $0.name < $1.name }
     }
 
     // MARK: standings
 
     static func standings(_ league: League) async throws -> [StandingsGroup] {
+        if league.provider == .statsapi { return try await StatsAPI.standings(league) }
         var url = "\(standingsBase)/\(league.path)/standings?level=3"
         if let g = league.group { url += "&group=\(g)" }
         return parseStandings(try await get(url), kind: league.kind)

@@ -13,6 +13,8 @@ final class AppModel {
     var delay: Int { didSet { UserDefaults.standard.set(delay, forKey: "delay"); pushSettings() } }
     var presetName: String { didSet { UserDefaults.standard.set(presetName, forKey: "preset") } }
     var prefs: Prefs { didSet { save(prefs, "prefs"); pushSettings() } }
+    /// Followed teams that stay in the feed but don't notify: no alerts, no Live Activities.
+    var muted: Set<String> { didSet { save(Array(muted), "muted"); pushSettings() } }
 
     struct Prefs: Codable, Hashable {
         var start = true
@@ -58,10 +60,16 @@ final class AppModel {
         delay = d.object(forKey: "delay") as? Int ?? 30
         presetName = d.string(forKey: "preset") ?? "YouTube TV"
         prefs = Self.load("prefs") ?? Prefs()
+        muted = Set(Self.load("muted") ?? [String]())
         deviceToken = d.string(forKey: "deviceToken")
     }
 
     func isFollowed(_ t: Team) -> Bool { follows.contains { $0.uid == t.uid } }
+
+    func isMuted(_ t: Team) -> Bool { muted.contains(t.uid) }
+    func toggleMute(_ t: Team) {
+        if muted.contains(t.uid) { muted.remove(t.uid) } else { muted.insert(t.uid) }
+    }
 
     func toggle(_ t: Team) {
         if let i = follows.firstIndex(where: { $0.uid == t.uid }) { follows.remove(at: i) }
@@ -99,7 +107,10 @@ final class AppModel {
         }
         games = await hold(all)
         lastRefresh = now
-        if prefs.liveActivities { Push.autoStart(games.filter { !$0.masked }) }
+        if prefs.liveActivities {
+            let loud = Set(follows.map(\.uid)).subtracting(muted)
+            Push.autoStart(games.filter { !$0.masked && $0.involves(loud) })
+        }
         lastError = failed.isEmpty ? nil : "Couldn't load \(failed.joined(separator: ", "))"
     }
 
@@ -143,7 +154,7 @@ final class AppModel {
         guard let token = deviceToken else { return }
         pushTask?.cancel()
         let reg = Relay.Registration(token: token, env: Relay.env, delay: delay,
-                                     follows: follows.map(\.uid), prefs: prefs.wire, startToken: startToken)
+                                     follows: follows.map(\.uid).filter { !muted.contains($0) }, prefs: prefs.wire, startToken: startToken)
         pushTask = Task {
             try? await Task.sleep(for: .milliseconds(600))
             guard !Task.isCancelled else { return }
