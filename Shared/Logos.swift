@@ -1,10 +1,10 @@
 import SwiftUI
 import UIKit
 
-/// Team logos for the Live Activity. A lock-screen card can't download anything, so the app
-/// saves each logo it sees into the shared App Group container and the widget reads it from
-/// there by team uid. Without the App Group (or before a logo has been saved) callers get nil
-/// and fall back to the team's letters.
+/// Team logos for the Live Activity. A lock-screen card can't download anything while it renders,
+/// so every logo ESPN and StatsAPI list is baked into the widget bundle at build time
+/// (ci/fetch_logos.py), named by team uid. The App Group copy is a fallback for teams that
+/// appear between builds; without either, callers get nil and show the team's letters.
 enum LogoStore {
     static let group = "group.com.gios.tapedelay"
 
@@ -17,13 +17,22 @@ enum LogoStore {
 
     static func file(_ uid: String) -> URL? {
         guard !uid.isEmpty else { return nil }
-        let safe = uid.map { $0.isLetter || $0.isNumber ? String($0) : "_" }.joined()
-        return dir?.appending(path: safe + ".png")
+        return dir?.appending(path: safeName(uid) + ".png")
     }
 
+    /// The logo baked into the widget at build time (ci/fetch_logos.py), else one the app saved.
     static func image(_ uid: String?) -> UIImage? {
-        guard let uid, let f = file(uid) else { return nil }
+        guard let uid, !uid.isEmpty else { return nil }
+        let name = safeName(uid)
+        if let u = Bundle.main.url(forResource: name, withExtension: "png", subdirectory: "Logos")
+            ?? Bundle.main.url(forResource: name, withExtension: "png"),
+           let img = UIImage(contentsOfFile: u.path) { return img }
+        guard let f = file(uid) else { return nil }
         return UIImage(contentsOfFile: f.path)
+    }
+
+    static func safeName(_ uid: String) -> String {
+        uid.map { $0.isLetter || $0.isNumber ? String($0) : "_" }.joined()
     }
 
     static func has(_ uid: String) -> Bool {
