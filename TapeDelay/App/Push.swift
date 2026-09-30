@@ -66,6 +66,14 @@ final class Push: NSObject, UIApplicationDelegate, UNUserNotificationCenterDeleg
     private func watch(_ activity: Activity<GameAttributes>) {
         guard watched.insert(activity.id).inserted else { return }
         let game = activity.attributes.gameId
+        // The relay retries a push-to-start it never heard back from, and the app can start one
+        // too; if that leaves two cards for one game, keep the first.
+        if Activity<GameAttributes>.activities.contains(where: {
+            $0.id != activity.id && $0.attributes.gameId == game && $0.activityState == .active
+        }) {
+            Task { await activity.end(nil, dismissalPolicy: .immediate) }
+            return
+        }
         Task {
             for await data in activity.pushTokenUpdates {
                 let tok = data.map { String(format: "%02x", $0) }.joined()
