@@ -13,7 +13,7 @@ struct TapeDelayWidgets: WidgetBundle {
 struct GameLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: GameAttributes.self) { ctx in
-            Scorebug(a: ctx.attributes, s: ctx.state)
+            Card(a: ctx.attributes, s: ctx.state)
                 .activityBackgroundTint(Color.black.opacity(0.82))
                 .activitySystemActionForegroundColor(.white)
         } dynamicIsland: { ctx in

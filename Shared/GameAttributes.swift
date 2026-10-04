@@ -40,9 +40,39 @@ struct GameAttributes: ActivityAttributes {
         var awayBonus: Bool?
         var homeFouls: Int?
         var awayFouls: Int?
+        // League card (relay `compose()`): the pill, and the grid when this card shows it.
+        var leagueName: String?
+        var leagueMore: Int?
+        var view: String?          // "league" while the card shows the grid
+        var page: Int?
+        var pages: Int?
+        var leagueTitle: String?
+        var tiles: [Tile]?
+
+        var showsLeague: Bool { view == "league" && !(tiles ?? []).isEmpty }
 
         var isFinal: Bool { state == "post" }
         var isLive: Bool { state == "in" }
+    }
+
+    /// One game in the league grid: a scorebug in miniature. Short keys: up to 4 ride in every push.
+    struct Tile: Codable, Hashable, Identifiable {
+        var id: String
+        var a: String, h: String         // abbreviations
+        var ac: String, hc: String       // colours
+        var st: String                   // pre / in / post
+        var d: String                    // "▲5", "3RD 14:48", "Q4 4:12", "72'", "FINAL"
+        var awayScore: Int?, homeScore: Int?
+        var t: Double?                   // start, for games not under way
+        var b: Int?                      // bases, bit 0 first .. bit 2 third
+        var o: Int?                      // outs
+        var n: String?                   // series note
+        var tv: String?
+
+        enum CodingKeys: String, CodingKey {
+            case id, a, h, ac, hc, st, d, t, b, o, n, tv
+            case awayScore = "as", homeScore = "hs"
+        }
     }
 
     var gameId: String
