@@ -34,6 +34,10 @@ ESPN FastCast ──> bs-relay (BasilNet) ──┬─> ntfy topics ──> Ligh
 brew install xcodegen && xcodegen generate && open TapeDelay.xcodeproj
 ```
 
+Build with **Xcode 27.1** (the iOS 27.1 SDK): that's what lets iPhone Duo run the app full screen
+on both displays, folded or open, and sideways. CI pins it in `ci/app.env` and runs on GitHub's
+`xcode-27` image, the only one with 27.1 so far.
+
 CI works the same as NDPass and XA: `check.yml` on every branch, a push to `main` ships to
 TestFlight through fastlane match, and **on the 1st of every month `main` is rebuilt as-is** so
 a TestFlight build never expires (they last 90 days). The workflow re-enables its own schedule

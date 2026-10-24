@@ -33,7 +33,8 @@ permissions:
 
 jobs:
   ship:
-    runs-on: macos-15
+    # Xcode 27.1 (the iOS 27.1 SDK iPhone Duo needs) is only on the Xcode 27 image so far.
+    runs-on: xcode-27
     timeout-minutes: 60
     env:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}

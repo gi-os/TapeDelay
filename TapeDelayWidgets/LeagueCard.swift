@@ -169,6 +169,7 @@ struct MiniBug: View {
             Text(ab).font(.system(size: 10.5, weight: .black)).lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 34, height: 18.25).background(Color(hex: hex))
             Text(sc).font(.system(size: 12, weight: .heavy)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 20, height: 18.25).background(Color(red: 0.106, green: 0.184, blue: 0.369))
         }
     }
@@ -192,6 +193,7 @@ struct MiniBug: View {
                 if live {
                     HStack(spacing: 10) { Text(score(t.awayScore)); Text(score(t.homeScore)) }
                         .font(.system(size: 17, weight: .black).italic()).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.6)
                 }
                 status(9).italic()
             }
@@ -206,11 +208,13 @@ struct MiniBug: View {
                 Text(t.a).font(.system(size: 10.5, weight: .black)).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer(minLength: 0)
                 Text(score(t.awayScore)).font(.system(size: 15, weight: .black)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
             }
             .padding(.horizontal, 5).frame(maxHeight: .infinity).background(grad(t.ac, false))
             status(9).frame(width: 40).frame(maxHeight: .infinity).background(Color(white: 0.055))
             HStack(spacing: 3) {
                 Text(score(t.homeScore)).font(.system(size: 15, weight: .black)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
                 Spacer(minLength: 0)
                 Text(t.h).font(.system(size: 10.5, weight: .black)).lineLimit(1).minimumScaleFactor(0.6)
             }
@@ -236,7 +240,7 @@ struct MiniBug: View {
             Text(ab).font(.system(size: 9.5, weight: .black)).lineLimit(1).minimumScaleFactor(0.6)
                 .frame(width: 34).frame(maxHeight: .infinity).background(Color(hex: hex))
             Spacer(minLength: 0)
-            Text(sc).font(.system(size: 13, weight: .black)).monospacedDigit().padding(.trailing, 8)
+            Text(sc).font(.system(size: 13, weight: .black)).monospacedDigit().lineLimit(1).fixedSize().padding(.trailing, 8)
         }
     }
 
@@ -248,9 +252,9 @@ struct MiniBug: View {
             HStack(spacing: 3) {
                 Text(t.a).lineLimit(1).minimumScaleFactor(0.6)
                 Spacer(minLength: 0)
-                Text(score(t.awayScore)).monospacedDigit()
+                Text(score(t.awayScore)).monospacedDigit().lineLimit(1).fixedSize()
                 Rectangle().fill(Color(white: 0.07)).frame(width: 1.5, height: live ? 14 : 0)
-                Text(score(t.homeScore)).monospacedDigit()
+                Text(score(t.homeScore)).monospacedDigit().lineLimit(1).fixedSize()
                 Spacer(minLength: 0)
                 Text(t.h).lineLimit(1).minimumScaleFactor(0.6)
             }

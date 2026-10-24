@@ -23,6 +23,9 @@ struct GameView: View {
                 }
                 activityButton
             }
+            // On the open Duo or sideways, a readable column instead of panels stretched edge to edge.
+            .frame(maxWidth: 720)
+            .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
             .padding(.bottom, 32)
         }
@@ -78,7 +81,7 @@ struct GameView: View {
                             Text("\(game.home.score ?? 0)").opacity((game.home.score ?? 0) < (game.away.score ?? 0) ? 0.6 : 1)
                         }
                         .font(.system(size: 68, weight: .black)).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.5)
+                        .lineLimit(1).minimumScaleFactor(0.4)
                         .contentTransition(.numericText())
                     }
                     if game.state != .pre {

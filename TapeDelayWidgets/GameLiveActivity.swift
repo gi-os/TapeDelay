@@ -35,6 +35,7 @@ struct GameLiveActivity: Widget {
                     HStack(spacing: 4) {
                         LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18, on: "000000")
                         Text("\(s.away)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.7)
                     }
                 }
             } compactTrailing: {
@@ -42,9 +43,11 @@ struct GameLiveActivity: Widget {
                     Countdown(a: a, s: s, size: 13).frame(maxWidth: 52)
                 } else if a.sport == "baseball" {
                     Text("\(s.away)-\(s.home)").font(.system(size: 13, weight: .heavy)).monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.6)
                 } else {
                     HStack(spacing: 4) {
                         Text("\(s.home)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
+                            .lineLimit(1).minimumScaleFactor(0.7)
                         LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18, on: "000000")
                     }
                 }
@@ -53,7 +56,7 @@ struct GameLiveActivity: Widget {
                     Image(systemName: "flag.fill").font(.system(size: 11)).foregroundStyle(flagYellow)
                 } else {
                 Text("\(s.away)-\(s.home)").font(.system(size: 10, weight: .heavy)).monospacedDigit()
-                    .minimumScaleFactor(0.6)
+                    .lineLimit(1).minimumScaleFactor(0.4)
                 }
             }
             .keylineTint(Color(hex: a.homeColor))
@@ -180,6 +183,7 @@ struct FootballBug: View {
                         Text("\(s.home)").opacity(s.home < s.away ? 0.7 : 1)
                     }
                     .font(.system(size: 36, weight: .black).italic()).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6)
                     .contentTransition(.numericText())
                     HStack(spacing: 10) {
                         Text(s.isFinal ? "FINAL" : s.detail.uppercased()).lineLimit(1).minimumScaleFactor(0.55)
@@ -292,6 +296,7 @@ struct BaseballBug: View {
                 .frame(width: 44, height: 32)
                 .background(Color(hex: color))
             Text("\(score)").font(.system(size: 20, weight: .heavy)).monospacedDigit()
+                .lineLimit(1).minimumScaleFactor(0.6).padding(.horizontal, 2)
                 .frame(width: 34, height: 32).background(navy)
                 .contentTransition(.numericText())
         }
@@ -349,14 +354,16 @@ struct BasketballBug: View {
             LogoMark(uid: uid, abbr: abbr, size: 30, on: color)
             VStack(alignment: home ? .trailing : .leading, spacing: 3) {
                 HStack(spacing: 3) {
-                    Text(abbr).font(.system(size: 13, weight: .black))
+                    Text(abbr).font(.system(size: 13, weight: .black)).lineLimit(1).minimumScaleFactor(0.7)
                     if leading { Circle().fill(flagYellow).frame(width: 5, height: 5) }
                 }
                 if let to { Pips(filled: to, total: 7, w: 4, h: 3) }
                 fouls(home: home)
             }
             Spacer(minLength: 0)
+            // Three digits (a 112-108 night) take the room first; the abbreviation shrinks instead.
             Text("\(score)").font(.system(size: 26, weight: .black)).monospacedDigit().contentTransition(.numericText())
+                .lineLimit(1).minimumScaleFactor(0.7).layoutPriority(1)
         }
         return items
             .environment(\.layoutDirection, home ? .rightToLeft : .leftToRight)
@@ -404,6 +411,7 @@ struct HockeyBug: View {
             Text(name).font(.system(size: 13, weight: .bold)).lineLimit(1).minimumScaleFactor(0.55)
             Spacer(minLength: 0)
             Text("\(score)").font(.system(size: 22, weight: .black)).monospacedDigit()
+                .lineLimit(1).fixedSize()
                 .padding(.trailing, 12).contentTransition(.numericText())
         }
         .frame(height: 34)
@@ -444,9 +452,10 @@ struct SoccerBug: View {
     private func side(_ uid: String?, _ abbr: String, _ score: Int, home: Bool) -> some View {
         HStack(spacing: 6) {
             LogoMark(uid: uid, abbr: abbr, size: 22, on: "dbdbdc")
-            Text(abbr).font(.system(size: 16, weight: .bold))
+            Text(abbr).font(.system(size: 16, weight: .bold)).lineLimit(1).minimumScaleFactor(0.7)
             Spacer(minLength: 0)
             Text("\(score)").font(.system(size: 18, weight: .bold)).monospacedDigit().contentTransition(.numericText())
+                .lineLimit(1).fixedSize()
         }
         .environment(\.layoutDirection, home ? .rightToLeft : .leftToRight)
         .padding(.horizontal, 10)
@@ -478,6 +487,7 @@ private struct IslandSide: View {
             LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: 30, on: "000000")
             if !home { Text("\(s.away)").font(.system(size: 28, weight: .black)).monospacedDigit() }
         }
+        .lineLimit(1).minimumScaleFactor(0.6)
         .contentTransition(.numericText())
         .padding(.horizontal, 4)
     }

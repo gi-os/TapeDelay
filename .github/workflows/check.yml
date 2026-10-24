@@ -15,7 +15,8 @@ concurrency:
 
 jobs:
   check:
-    runs-on: macos-15
+    # Xcode 27.1 (the iOS 27.1 SDK iPhone Duo needs) is only on the Xcode 27 image so far.
+    runs-on: xcode-27
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4

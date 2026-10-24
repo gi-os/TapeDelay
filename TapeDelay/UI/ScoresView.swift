@@ -34,8 +34,11 @@ struct ScoresView: View {
                         }
                         ForEach(Bucket.group(shown.filter { $0.id != hero?.id })) { section in
                             SectionHeader(title: section.bucket.rawValue, count: section.games.count)
-                            ForEach(section.games) { g in
-                                NavigationLink(value: g) { SplitCard(game: g) }.buttonStyle(.plain)
+                            // One column on a phone, two side by side on the open Duo or sideways.
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 340), spacing: 14)], spacing: 14) {
+                                ForEach(section.games) { g in
+                                    NavigationLink(value: g) { SplitCard(game: g) }.buttonStyle(.plain)
+                                }
                             }
                         }
                         if model.games.isEmpty && !model.loading {
@@ -237,6 +240,7 @@ struct HeroCard: View {
                         }
                         .font(.system(size: 62, weight: .black))
                         .monospacedDigit()
+                        .lineLimit(1).minimumScaleFactor(0.45)
                         .contentTransition(.numericText())
                         Text(game.detail).font(.subheadline.weight(.heavy)).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.6)
@@ -390,6 +394,7 @@ struct SplitCard: View {
         let trailing = (s.score ?? 0) < (o.score ?? 0)
         return Text("\(s.score ?? 0)")
             .font(.system(size: 36, weight: .black)).monospacedDigit()
+            .lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
             .opacity(trailing ? 0.55 : 1)
             .contentTransition(.numericText())
     }
