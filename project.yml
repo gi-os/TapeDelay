@@ -42,9 +42,11 @@ targets:
         NSSupportsLiveActivitiesFrequentUpdates: true
         UIBackgroundModes: [remote-notification]
         # Sideways too, so the open iPhone Duo gets the whole inner display (built with the
-        # iOS 27.1 SDK, see ci/app.env) instead of a portrait phone-sized window.
+        # iOS 27.1 SDK, see ci/app.env) instead of a portrait phone-sized window. App Store
+        # Connect rejects the upload (90474) without all four once UIRequiresFullScreen is gone.
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         UIUserInterfaceStyle: Dark
