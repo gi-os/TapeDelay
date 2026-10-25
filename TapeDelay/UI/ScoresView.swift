@@ -222,7 +222,6 @@ struct HeroCard: View {
 
             HStack(alignment: .center) {
                 team(game.away, possession: game.situation?.possession == game.away.teamId)
-                Spacer(minLength: 0)
                 VStack(spacing: 6) {
                     if game.masked {
                         Image(systemName: "eye.slash").font(.system(size: 40, weight: .bold))
@@ -234,19 +233,12 @@ struct HeroCard: View {
                             .font(.subheadline.weight(.bold)).opacity(0.8)
                             .lineLimit(1).minimumScaleFactor(0.6)
                     } else {
-                        HStack(alignment: .firstTextBaseline, spacing: 14) {
-                            score(game.away, against: game.home)
-                            score(game.home, against: game.away)
-                        }
-                        .font(.system(size: 62, weight: .black))
-                        .monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.45)
-                        .contentTransition(.numericText())
+                        ScorePair(away: game.away.score ?? 0, home: game.home.score ?? 0, size: 62)
                         Text(game.detail).font(.subheadline.weight(.heavy)).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.6)
                     }
                 }
-                Spacer(minLength: 0)
+                .frame(maxWidth: .infinity)
                 team(game.home, possession: game.situation?.possession == game.home.teamId)
             }
             .padding(.horizontal, 12)
@@ -286,11 +278,6 @@ struct HeroCard: View {
             if let r = s.record { Text(r).font(.caption2.weight(.semibold)).opacity(0.7) }
         }
         .frame(width: 104)
-    }
-
-    private func score(_ s: Side, against o: Side) -> some View {
-        let trailing = (s.score ?? 0) < (o.score ?? 0)
-        return Text("\(s.score ?? 0)").opacity(trailing ? 0.6 : 1)
     }
 
     /// Situation plus the tape: the game so far, the stretch you haven't seen yet, then live.
@@ -371,7 +358,8 @@ struct SplitCard: View {
                         .lineLimit(1).minimumScaleFactor(0.6)
                 }
             }
-            .frame(maxWidth: .infinity)
+            // Never narrower than "Final" on one line (it wrapped to "Fi-nal" next to 103-107).
+            .frame(minWidth: 44, maxWidth: .infinity)
             if showScores { score(game.home, against: game.away) }
             TeamDisc(side: game.home, size: 46)
         }
@@ -392,8 +380,10 @@ struct SplitCard: View {
 
     private func score(_ s: Side, against o: Side) -> some View {
         let trailing = (s.score ?? 0) < (o.score ?? 0)
+        // A step down when either side has three digits, so both fit beside a one-line "Final".
+        let big = max(s.score ?? 0, o.score ?? 0) >= 100
         return Text("\(s.score ?? 0)")
-            .font(.system(size: 36, weight: .black)).monospacedDigit()
+            .font(.system(size: big ? 30 : 36, weight: .black)).monospacedDigit()
             .lineLimit(1).minimumScaleFactor(0.6).layoutPriority(1)
             .opacity(trailing ? 0.55 : 1)
             .contentTransition(.numericText())
@@ -411,6 +401,7 @@ struct SplitCard: View {
         case .post:
             if game.masked { Image(systemName: "eye.slash") }
             Text(game.detail.isEmpty ? "Final" : game.detail).font(.caption.weight(.heavy)).opacity(0.85)
+                .lineLimit(1).minimumScaleFactor(0.6)
         case .pre:
             Text(game.date, format: .dateTime.weekday(.abbreviated).hour().minute())
                 .font(.subheadline.weight(.heavy)).lineLimit(1).minimumScaleFactor(0.6)

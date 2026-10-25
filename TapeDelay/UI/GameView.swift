@@ -66,7 +66,6 @@ struct GameView: View {
         VStack(spacing: 10) {
             HStack(alignment: .center) {
                 team(game.away)
-                Spacer(minLength: 0)
                 VStack(spacing: 6) {
                     if game.masked {
                         Image(systemName: "eye.slash").font(.system(size: 44, weight: .bold))
@@ -76,20 +75,15 @@ struct GameView: View {
                         Text(game.date, format: .dateTime.weekday(.wide).month().day()).font(.subheadline.weight(.bold)).opacity(0.8)
                             .lineLimit(1).minimumScaleFactor(0.6)
                     } else {
-                        HStack(spacing: 16) {
-                            Text("\(game.away.score ?? 0)").opacity((game.away.score ?? 0) < (game.home.score ?? 0) ? 0.6 : 1)
-                            Text("\(game.home.score ?? 0)").opacity((game.home.score ?? 0) < (game.away.score ?? 0) ? 0.6 : 1)
-                        }
-                        .font(.system(size: 68, weight: .black)).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.4)
-                        .contentTransition(.numericText())
+                        ScorePair(away: game.away.score ?? 0, home: game.home.score ?? 0, size: 68)
                     }
                     if game.state != .pre {
                         Text(game.detail).font(.subheadline.weight(.heavy)).monospacedDigit()
                             .lineLimit(1).minimumScaleFactor(0.6)
                     }
                 }
-                Spacer(minLength: 0)
+                // All the room between the two fixed team columns, so the score sizes to that.
+                .frame(maxWidth: .infinity)
                 team(game.home)
             }
             if game.masked {

@@ -3,25 +3,30 @@ import SwiftUI
 struct LeagueChips: View {
     let leagues: [League]
     @Binding var selected: String
+    /// Leads with a "My Teams" chip that selects `StandingsView.mine`.
+    var mine = false
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             GlassEffectContainer(spacing: 8) {
                 HStack(spacing: 8) {
-                    ForEach(leagues) { l in
-                        Button { withAnimation(.snappy) { selected = l.id } } label: {
-                            Label(l.name, systemImage: l.kind.symbol)
-                                .font(.subheadline.weight(.semibold))
-                                .padding(.horizontal, 12).padding(.vertical, 8)
-                        }
-                        .buttonStyle(.plain)
-                        .glassEffect(selected == l.id ? .regular.tint(Theme.accent.opacity(0.45)).interactive() : .regular.interactive(),
-                                     in: .capsule)
-                    }
+                    if mine { chip(StandingsView.mine, "My Teams", "star.fill") }
+                    ForEach(leagues) { l in chip(l.id, l.name, l.kind.symbol) }
                 }
                 .padding(.horizontal, 16).padding(.vertical, 4)
             }
         }
+    }
+
+    private func chip(_ id: String, _ title: String, _ symbol: String) -> some View {
+        Button { withAnimation(.snappy) { selected = id } } label: {
+            Label(title, systemImage: symbol)
+                .font(.subheadline.weight(.semibold))
+                .padding(.horizontal, 12).padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .glassEffect(selected == id ? .regular.tint(Theme.accent.opacity(0.45)).interactive() : .regular.interactive(),
+                     in: .capsule)
     }
 }
 
@@ -164,9 +169,13 @@ struct Drift: View {
     }
 }
 
+/// Standings for any league, or "My Teams": the groups holding your teams from every league
+/// you follow, stacked, so the NBA and NHL are one scroll from the NFL.
 struct StandingsView: View {
+    static let mine = "mine"
+
     @Environment(AppModel.self) private var model
-    @State private var league = ""
+    @State private var league = StandingsView.mine
     @State private var groups: [String: [StandingsGroup]] = [:]
     @State private var failed = false
 
@@ -176,34 +185,67 @@ struct StandingsView: View {
         return mine + League.all.filter { l in !mine.contains(l) }
     }
 
+    /// The leagues the selected chip covers.
+    private var shown: [League] {
+        league == Self.mine ? model.followedLeagues : League.byId(league).map { [$0] } ?? []
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
-                GlassEffectContainer(spacing: 12) {
-                    LazyVStack(spacing: 12) {
-                        if let gs = groups[league] {
-                            ForEach(gs) { g in table(g) }
-                        } else if failed {
-                            Text("Couldn't load standings.").foregroundStyle(.secondary).padding(.top, 40)
-                        } else {
-                            ProgressView().padding(.top, 60)
-                        }
+                VStack(alignment: .leading, spacing: 12) {
+                    // In the content, as on Teams: pinned as a top inset they were lost under the
+                    // iPhone Duo's side bars, which left the tab stuck on the first league.
+                    LeagueChips(leagues: leagues, selected: $league, mine: !model.followedLeagues.isEmpty)
+                        .padding(.horizontal, -16)
+                    GlassEffectContainer(spacing: 12) {
+                        LazyVStack(spacing: 12) { tables }
                     }
-                    .padding(16)
                 }
+                .padding(16)
             }
             .background(Backdrop(colors: model.follows.map { Color.team($0.color) }))
-            .safeAreaInset(edge: .top, spacing: 0) { LeagueChips(leagues: leagues, selected: $league) }
             .navigationTitle("Standings")
-            .onAppear { if league.isEmpty || !leagues.contains(where: { $0.id == league }) { league = leagues[0].id } }
+            .onAppear {
+                if league == Self.mine ? model.followedLeagues.isEmpty : League.byId(league) == nil { league = leagues[0].id }
+            }
             .task(id: league) { await load() }
-            .refreshable { groups[league] = nil; await load() }
+            .refreshable {
+                for l in shown { groups[l.id] = nil }
+                await load()
+            }
         }
     }
 
-    private func table(_ g: StandingsGroup) -> some View {
+    @ViewBuilder private var tables: some View {
+        if league == Self.mine {
+            ForEach(model.followedLeagues) { l in
+                if let gs = groups[l.id] {
+                    let yours = gs.filter { g in g.rows.contains { model.followedUids.contains($0.uid) } }
+                    ForEach(yours.isEmpty ? gs : yours) { g in table(g, league: l) }
+                }
+            }
+        } else if let gs = groups[league] {
+            ForEach(gs) { g in table(g) }
+        }
+        if shown.contains(where: { groups[$0.id] == nil }) {
+            if failed {
+                Text("Couldn't load standings.").foregroundStyle(.secondary).padding(.top, 40)
+            } else {
+                ProgressView().padding(.top, 60)
+            }
+        }
+    }
+
+    /// `league` labels the table when leagues are mixed ("NBA · Eastern Conference").
+    private func table(_ g: StandingsGroup, league: League? = nil) -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text(g.name).font(.headline).padding(.bottom, 4)
+            if let league {
+                Label(g.name.isEmpty ? league.name : "\(league.name) · \(g.name)", systemImage: league.kind.symbol)
+                    .font(.headline).padding(.bottom, 4)
+            } else {
+                Text(g.name).font(.headline).padding(.bottom, 4)
+            }
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 7) {
                 GridRow {
                     Text("").gridCellColumns(2)
@@ -227,9 +269,16 @@ struct StandingsView: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 22))
     }
 
+    /// Every league the chip covers that isn't loaded yet, side by side.
     private func load() async {
-        guard !league.isEmpty, groups[league] == nil, let l = League.byId(league) else { return }
         failed = false
-        do { groups[league] = try await ESPN.standings(l) } catch { failed = true }
+        await withTaskGroup(of: (String, [StandingsGroup]?).self) { tg in
+            for l in shown where groups[l.id] == nil {
+                tg.addTask { (l.id, try? await ESPN.standings(l)) }
+            }
+            for await (id, gs) in tg {
+                if let gs { groups[id] = gs } else { failed = true }
+            }
+        }
     }
 }

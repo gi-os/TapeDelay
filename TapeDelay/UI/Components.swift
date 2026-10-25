@@ -136,3 +136,33 @@ struct Bases: View {
             .rotationEffect(.degrees(45))
     }
 }
+
+/// Both scores side by side at the biggest size that fits. Shrink-to-fit on the Texts didn't
+/// work: on the folded Duo a 103-107 final drew as "1… 107". ViewThatFits picks a size that
+/// fits instead.
+struct ScorePair: View {
+    let away: Int, home: Int
+    let size: CGFloat
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            line(size)
+            line(size * 0.85)
+            line(size * 0.72)
+            line(size * 0.6)
+            line(size * 0.5)
+            line(size * 0.42)
+            line(size * 0.35)
+        }
+    }
+
+    private func line(_ s: CGFloat) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: s * 0.23) {
+            Text("\(away)").opacity(away < home ? 0.6 : 1)
+            Text("\(home)").opacity(home < away ? 0.6 : 1)
+        }
+        .font(.system(size: s, weight: .black)).monospacedDigit()
+        .lineLimit(1).fixedSize()
+        .contentTransition(.numericText())
+    }
+}
