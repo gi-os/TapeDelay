@@ -185,6 +185,9 @@ struct StandingsView: View {
         return mine + League.all.filter { l in !mine.contains(l) }
     }
 
+    private var selectedName: String { league == Self.mine ? "My Teams" : League.byId(league)?.name ?? "League" }
+    private var selectedSymbol: String { league == Self.mine ? "star.fill" : League.byId(league)?.kind.symbol ?? "list.number" }
+
     /// The leagues the selected chip covers.
     private var shown: [League] {
         league == Self.mine ? model.followedLeagues : League.byId(league).map { [$0] } ?? []
@@ -197,6 +200,7 @@ struct StandingsView: View {
                     // In the content, as on Teams: pinned as a top inset they were lost under the
                     // iPhone Duo's side bars, which left the tab stuck on the first league.
                     LeagueChips(leagues: leagues, selected: $league, mine: !model.followedLeagues.isEmpty)
+                        .scrollClipDisabled()
                         .padding(.horizontal, -16)
                     GlassEffectContainer(spacing: 12) {
                         LazyVStack(spacing: 12) { tables }
@@ -206,6 +210,21 @@ struct StandingsView: View {
             }
             .background(Backdrop(colors: model.follows.map { Color.team($0.color) }))
             .navigationTitle("Standings")
+            // Also a menu in the nav bar: on the folded Duo the chip row got clipped under the
+            // top bar, and this button stays put however the screen is laid out.
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("League", selection: $league) {
+                            if !model.followedLeagues.isEmpty { Label("My Teams", systemImage: "star.fill").tag(Self.mine) }
+                            ForEach(leagues) { l in Label(l.name, systemImage: l.kind.symbol).tag(l.id) }
+                        }
+                    } label: {
+                        Label(selectedName, systemImage: selectedSymbol).labelStyle(.titleAndIcon)
+                    }
+                    .accessibilityLabel("League: \(selectedName)")
+                }
+            }
             .onAppear {
                 if league == Self.mine ? model.followedLeagues.isEmpty : League.byId(league) == nil { league = leagues[0].id }
             }
