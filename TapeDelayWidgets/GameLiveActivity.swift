@@ -24,33 +24,9 @@ struct GameLiveActivity: Widget {
                 DynamicIslandExpandedRegion(.center) { IslandCenter(a: a, s: s) }
                 DynamicIslandExpandedRegion(.bottom) { IslandBottom(a: a, s: s) }
             } compactLeading: {
-                if s.state == "pre" {
-                    HStack(spacing: -4) {
-                        LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18, on: "000000")
-                        LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18, on: "000000")
-                    }
-                } else if a.sport == "baseball" {
-                    MiniDiamond(bases: s.bases ?? [false, false, false], size: 5)
-                } else {
-                    HStack(spacing: 4) {
-                        LogoMark(uid: a.awayUid, abbr: a.awayAbbr, size: 18, on: "000000")
-                        Text("\(s.away)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                    }
-                }
+                IslandCompact(a: a, s: s, trailing: false)
             } compactTrailing: {
-                if s.state == "pre" {
-                    Countdown(a: a, s: s, size: 13).frame(maxWidth: 52)
-                } else if a.sport == "baseball" {
-                    Text("\(s.away)-\(s.home)").font(.system(size: 13, weight: .heavy)).monospacedDigit()
-                        .lineLimit(1).minimumScaleFactor(0.6)
-                } else {
-                    HStack(spacing: 4) {
-                        Text("\(s.home)").font(.system(size: 14, weight: .heavy)).monospacedDigit()
-                            .lineLimit(1).minimumScaleFactor(0.7)
-                        LogoMark(uid: a.homeUid, abbr: a.homeAbbr, size: 18, on: "000000")
-                    }
-                }
+                IslandCompact(a: a, s: s, trailing: true)
             } minimal: {
                 if s.state == "pre" {
                     Image(systemName: "flag.fill").font(.system(size: 11)).foregroundStyle(flagYellow)
@@ -460,6 +436,87 @@ struct SoccerBug: View {
         .environment(\.layoutDirection, home ? .rightToLeft : .leftToRight)
         .padding(.horizontal, 10)
         .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Dynamic Island, compact
+
+/// One side of the camera. On the iPhone Duo the island runs down the narrow status column with
+/// leading above trailing, so there each side stacks instead: away logo over its score, then the
+/// home score over its logo, the two scores meeting in the middle the way they flank the camera.
+private struct IslandCompact: View {
+    let a: GameAttributes, s: GameAttributes.ContentState
+    let trailing: Bool
+
+    var body: some View {
+        if #available(iOS 27.0, *) {
+            LimitedWidth(wide: wide, narrow: narrow)
+        } else {
+            wide
+        }
+    }
+
+    @ViewBuilder private var wide: some View {
+        if s.state == "pre" {
+            if trailing {
+                Countdown(a: a, s: s, size: 13).frame(maxWidth: 52)
+            } else {
+                HStack(spacing: -4) { logo(home: false, size: 18); logo(home: true, size: 18) }
+            }
+        } else if a.sport == "baseball" {
+            if trailing {
+                Text("\(s.away)-\(s.home)").font(.system(size: 13, weight: .heavy)).monospacedDigit()
+                    .lineLimit(1).minimumScaleFactor(0.6)
+            } else {
+                MiniDiamond(bases: s.bases ?? [false, false, false], size: 5)
+            }
+        } else {
+            HStack(spacing: 4) {
+                if trailing { score(s.home, size: 14); logo(home: true, size: 18) }
+                else { logo(home: false, size: 18); score(s.away, size: 14) }
+            }
+        }
+    }
+
+    @ViewBuilder private var narrow: some View {
+        if s.state == "pre" {
+            if trailing {
+                Countdown(a: a, s: s, size: 12)
+            } else {
+                VStack(spacing: -4) { logo(home: false, size: 18); logo(home: true, size: 18) }
+            }
+        } else if a.sport == "baseball" {
+            // The bases on top, then the runs a box score's way: away over home.
+            if trailing {
+                VStack(spacing: 0) { score(s.away, size: 14); score(s.home, size: 14) }
+            } else {
+                MiniDiamond(bases: s.bases ?? [false, false, false], size: 5)
+            }
+        } else {
+            VStack(spacing: 1) {
+                if trailing { score(s.home, size: 15); logo(home: true, size: 20) }
+                else { logo(home: false, size: 20); score(s.away, size: 15) }
+            }
+        }
+    }
+
+    private func logo(home: Bool, size: CGFloat) -> some View {
+        LogoMark(uid: home ? a.homeUid : a.awayUid, abbr: home ? a.homeAbbr : a.awayAbbr, size: size, on: "000000")
+    }
+
+    private func score(_ n: Int, size: CGFloat) -> some View {
+        Text("\(n)").font(.system(size: size, weight: .heavy)).monospacedDigit()
+            .lineLimit(1).minimumScaleFactor(0.6).contentTransition(.numericText())
+    }
+}
+
+/// `narrow` where the system squeezes the island's width (the Duo's vertical one), else `wide`.
+@available(iOS 27.0, *)
+private struct LimitedWidth<Wide: View, Narrow: View>: View {
+    @Environment(\.isDynamicIslandLimitedInWidth) private var limited
+    let wide: Wide, narrow: Narrow
+    var body: some View {
+        if limited { narrow } else { wide }
     }
 }
 
